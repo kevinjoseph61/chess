@@ -15,10 +15,11 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
-from game.views import index
+from game.views import index, game
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('accounts/', include('django.contrib.auth.urls')),
-    path('',index)
+    path('',index),
+    path('game/<int:game_id>', game)
 ]

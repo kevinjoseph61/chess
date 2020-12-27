@@ -6,7 +6,6 @@ from django.contrib.auth.models import User
 room=0
 
 class GameConsumer(AsyncJsonWebsocketConsumer):
-
     async def connect(self):
         if self.scope["user"].is_anonymous:
             await self.close()
@@ -17,42 +16,62 @@ class GameConsumer(AsyncJsonWebsocketConsumer):
         except:
             await self.close()
             return
-        if await database_sync_to_async(self.verify(self.game_id)):
-            pass
-        else:
+        side = await self.verify(self.game_id)
+        if side == False:
             await self.close()
             return
         await self.accept()
+        await self.join_room(side)
+        if side[2]:
+            await self.opp_online()
 
     async def receive_json(self, content):
         command = content.get("command", None)
         try:
             if command == "new-move":
-                await self.new_move(content["source"],content["target"])
+                await self.new_move(content["source"],content["target"],content["fen"],content["pgn"])
         except:
             pass
 
     async def disconnect(self, code):
-        global room
-        room-=1
+        await self.disconn()
 
-    async def join_room(self, color):
+    async def join_room(self, data):
         await self.channel_layer.group_add(
-            "default",
+            str(self.game_id),
             self.channel_name,
         )
         await self.send_json({
             "command":"join",
-            "orientation": color,
+            "orientation": data[0],
+            "pgn": data[1],
+            "opp_online": data[2]
         })
 
-    async def new_move(self, source, target):
+    async def opp_online(self):
         await self.channel_layer.group_send(
-            "default",
+            str(self.game_id),
+            {
+                "type": "online.opp",
+                'sender_channel_name': self.channel_name
+            }
+        )
+    
+    async def online_opp(self,event):
+        if self.channel_name != event['sender_channel_name']:
+            await self.send_json({
+                "command":"opponent-online",
+            })
+
+    async def new_move(self, source, target, fen, pgn):
+        await self.channel_layer.group_send(
+            str(self.game_id),
             {
                 "type": "move.new",
                 "source": source,
                 "target": target,
+                "fen": fen,
+                "pgn": pgn,
                 'sender_channel_name': self.channel_name
             }
         )
@@ -63,20 +82,62 @@ class GameConsumer(AsyncJsonWebsocketConsumer):
                 "command":"new-move",
                 "source": event["source"],
                 "target": event["target"],
+                "fen": event["fen"],
+                "pgn": event["pgn"],
             })
+        await self.update(event["fen"],event["pgn"])
 
+    @database_sync_to_async
     def verify(self, game_id):
-        game = Game.objects.get(id=game_id)
+        game = Game.objects.all().filter(id=game_id)[0]
         if not game:
             return False
-        user = User.objects.get_by_natural_key(self.scope["user"].username)
+        user = self.scope["user"]
+        side = "white"
+        opp=False
         if game.opponent == user:
             game.opponent_online = True
+            if game.owner_side == "white":
+                side = "black"
+            else:
+                side = "white"
+            if game.owner_online == True:
+                opp = True
+            print("Setting opponent online")
         elif game.owner == user:
-            game.owner_online == True
+            game.owner_online = True
+            if game.owner_side == "white":
+                side = "white"
+            else:
+                side = "black"
+            if game.opponent_online == True:
+                opp = True
+            print("Setting owner online")
         else:
             return False
         game.save()
-        return True
-            
+        return [side,game.pgn,opp]
+
+    @database_sync_to_async
+    def disconn(self):
+        user = self.scope["user"]
+        game = Game.objects.all().filter(id=self.game_id)[0]
+        if game.opponent == user:
+            game.opponent_online = False
+            print("Setting opponent offline")
+        elif game.owner == user:
+            game.owner_online = False
+            print("Setting owner offline")
+        game.save()
+        
+    @database_sync_to_async
+    def update(self, fen, pgn):
+        game = Game.objects.all().filter(id=self.game_id)[0]
+        if not game:
+            print("Game not found")
+            return
+        game.fen = fen
+        game.pgn = pgn
+        game.save()
+        print("Saving game details")
 

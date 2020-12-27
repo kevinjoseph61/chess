@@ -5,11 +5,37 @@
   <meta charset="utf-8" />
   <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
   <title>Multiplayer Chess</title>
+
+  <!--CSS CDNs-->
   <link rel="stylesheet" href="https://unpkg.com/@chrisoakman/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.css" integrity="sha384-q94+BZtLrkL1/ohfjR8c6L+A6qzNH9R2hBLwyoAfu3i/WCvQjzL2RQJ3uNHDISdU" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+
+  <!--JS CDNs-->
+  <script src="https://code.jquery.com/jquery-3.5.1.min.js" integrity="sha256-9/aliU8dGd2tb6OSsuzixeV4y/faTqgFtohetphbbj0=" crossorigin="anonymous"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
+  <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/reconnecting-websocket/1.0.0/reconnecting-websocket.min.js" integrity="sha512-B4skI5FiLurS86aioJx9VfozI1wjqrn6aTdJH+YQUmCZum/ZibPBTX55k5d9XM6EsKePDInkLVrN7vPmJxc1qA==" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@chrisoakman/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.js" integrity="sha384-8Vi8VHwn3vjQ9eUHUxex3JSN/NFqUg3QbPyX8kWyb93+8AC/pPWTzj+nHtbC5bxD" crossorigin="anonymous"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.2/chess.js" integrity="sha384-s3XgLpvmHyscVpijnseAmye819Ee3yaGa8NxstkJVyA6nuDFjt59u1QvuEl/mecz" crossorigin="anonymous"></script>
 </head>
 <body>
 
-<!--- Begin Example HTML ------------------------------------------------------>
+<div class="modal fade" id="gameModal" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h4 class="modal-title" id="modal-title">Please wait...</h4>
+      </div>
+      <div class="modal-body">
+        <p id="modal-body">Wait for your opponent to connect to the game</p>
+      </div>
+      <div class="modal-footer">
+        <a href="/" class="btn btn-danger">Return to Lobby</a>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div id="myBoard" style="width: 400px"></div>
 <label>Status:</label>
 <div id="status"> Please wait for connection establishment...</div>
@@ -17,18 +43,11 @@
 <div id="fen"></div>
 <label>PGN:</label>
 <div id="pgn"></div>
-<!--- End Example HTML -------------------------------------------------------->
 
-<script src="https://code.jquery.com/jquery-3.5.1.min.js" integrity="sha256-9/aliU8dGd2tb6OSsuzixeV4y/faTqgFtohetphbbj0=" crossorigin="anonymous"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/reconnecting-websocket/1.0.0/reconnecting-websocket.min.js" integrity="sha512-B4skI5FiLurS86aioJx9VfozI1wjqrn6aTdJH+YQUmCZum/ZibPBTX55k5d9XM6EsKePDInkLVrN7vPmJxc1qA==" crossorigin="anonymous"></script>
-<script src="https://unpkg.com/@chrisoakman/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.js" integrity="sha384-8Vi8VHwn3vjQ9eUHUxex3JSN/NFqUg3QbPyX8kWyb93+8AC/pPWTzj+nHtbC5bxD" crossorigin="anonymous"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.2/chess.js" integrity="sha384-s3XgLpvmHyscVpijnseAmye819Ee3yaGa8NxstkJVyA6nuDFjt59u1QvuEl/mecz" crossorigin="anonymous"></script>
+
 <script>
-// --- Begin Example JS --------------------------------------------------------
-// NOTE: this example uses the chess.js library:
-// https://github.com/jhlywa/chess.js
 var ws_scheme = window.location.protocol == "https:" ? "wss" : "ws";
-var ws_path = ws_scheme + '://' + window.location.host + "/game/stream/";
+var ws_path = ws_scheme + '://' + window.location.host + "/game/" + {{game_id}};
 console.log("Connecting to " + ws_path);
 var socket = new ReconnectingWebSocket(ws_path);
 var board = null
@@ -36,6 +55,8 @@ var game = new Chess()
 var $status = $('#status')
 var $fen = $('#fen')
 var $pgn = $('#pgn')
+var $modalTitle = $('#modal-title')
+var $modalBody = $('#modal-body')
 var orientation = null
 
 var whiteSquareGrey = '#a9a9a9'
@@ -73,14 +94,11 @@ function onDrop (source, target) {
   socket.send(JSON.stringify({"command": "new-move","source": source,"target": target,"fen": game.fen(), "pgn": game.pgn()}));
 }
 
-// update the board position after the piece snap
-// for castling, en passant, pawn promotion
 function onSnapEnd () {
   board.position(game.fen())
 }
 
 function onMouseoverSquare (square, piece) {
-  // get list of possible moves for this square
   if (!((orientation === 'white' && game.turn()==='w') || (orientation === 'black' && game.turn()==='b')))
     return
 
@@ -88,14 +106,8 @@ function onMouseoverSquare (square, piece) {
     square: square,
     verbose: true
   })
-
-  // exit if there are no moves available for this square
   if (moves.length === 0) return
-
-  // highlight the square they moused over
   greySquare(square)
-
-  // highlight the possible squares for this piece
   for (var i = 0; i < moves.length; i++) {
     greySquare(moves[i].to)
   }
@@ -116,22 +128,17 @@ function updateStatus () {
   if (game.turn() === 'b') {
     moveColor = 'Black'
   }
-
-  // checkmate?
   if (game.in_checkmate()) {
     status = 'Game over, ' + moveColor + ' is in checkmate.'
   }
-
-  // draw?
   else if (game.in_draw()) {
     status = 'Game over, drawn position'
   }
-
-  // game still on
+  else if (game.in_stalemate()) {
+    status = 'Game over, stalemate'
+  }
   else {
     status = moveColor + ' to move'
-
-    // check?
     if (game.in_check()) {
       status += ', ' + moveColor + ' is in check'
     }
@@ -143,6 +150,19 @@ function updateStatus () {
 }
 
 updateStatus()
+
+socket.onclose = function () {
+  $modalTitle.html("Connection closed")
+  $modalBody.html("Connection closed unexpectedly please wait while we try to reconnect...")
+  $('#gameModal').modal({
+    keyboard: false,
+    backdrop: 'static'
+  });
+}
+
+socket.onopen = function () {
+  $('#gameModal').modal('hide')
+}
 
 socket.onmessage = function (message) {
   console.log("Got websocket message " + message.data);
@@ -162,6 +182,20 @@ socket.onmessage = function (message) {
     }
     board = Chessboard('myBoard', config)
     orientation=data.orientation;
+    game.load_pgn(data.pgn)
+    board.position(game.fen());
+    updateStatus();
+    if(data.opp_online!=true) {
+      $modalTitle.html("Please Wait...")
+      $modalBody.html("Please wait for your opponent to connect to this game")
+      $('#gameModal').modal({
+        keyboard: false,
+        backdrop: 'static'
+      });
+    }
+  }
+  else if(data.command=="opponent-online"){
+    $('#gameModal').modal('hide');
   }
   else if(data.command=="new-move") {
     game.move({
@@ -172,7 +206,6 @@ socket.onmessage = function (message) {
     updateStatus()
   }
 }
-// --- End Example JS ----------------------------------------------------------
 </script>
 </body>
 </html>
