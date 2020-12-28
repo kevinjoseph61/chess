@@ -1,0 +1,59 @@
+{% extends "layout.html" %}
+
+{%block title%}Asli Indian!{% endblock %}
+  
+{% block navbar %}
+    <ul class="navbar-nav mr-auto">
+      <li class="nav-item active">
+        <a class="nav-link">Lobby </a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" href="/">Single Player</a>
+		  </li>
+      <li class="nav-item">
+        <a class="nav-link" href="/">Ongoing Games</a>
+		  </li>
+      <li class="nav-item">
+        <a class="nav-link" href="/">Completed Games</a>
+		  </li>
+    </ul>
+    <ul class="navbar-nav ml-auto">
+      <li class="nav-item">
+        <a class="nav-link" href="/">Logout</a>
+      </li>
+      <li class="nav-item">
+      	<a class="nav-link active"><b>Hello, {{ user.username }}</b></a>
+      </li>
+	</ul>
+{% endblock %}
+
+{% block body %}
+  <div class="jumbotron">
+    <div class="container">
+      <h1 class="display-3">Chess Gang</h1>
+      <p>Welcome to Chess Gang! Play real-time multiplayer chess with your friends or just practice on Single Player Mode</p>
+      <p><a class="btn btn-primary btn-lg" href="/" role="button">Create a Game &raquo;</a></p>
+    </div>
+  </div>
+
+  <div class="container">
+    <div class="row">
+     <div class="col-md-4">
+        <h2>Single Player Game</h2>
+        <p>Play with our Chess AI and upskill now!</p>
+        <p><a class="btn btn-secondary" href="/" role="button">Start &raquo;</a></p>
+      </div>
+      <div class="col-md-4">
+        <h2>View Ongoing Games</h2>
+        <p>View games that you still haven't completed yet</p>
+        <p><a class="btn btn-secondary" href="/" role="button">View &raquo;</a></p>
+      </div>
+      <div class="col-md-4">
+        <h2>View Completed Games</h2>
+        <p>View games that you've completed and track your progress</p>
+        <p><a class="btn btn-secondary" href="/" role="button">View &raquo;</a></p>
+      </div>
+    </div> 
+    <hr>
+  </div> 
+{% endblock %}

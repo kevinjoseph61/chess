@@ -11,7 +11,7 @@ class Game(models.Model):
     opponent_online = models.BooleanField(default=False)
     fen = models.CharField(max_length=92, null=True, blank=True)
     pgn = models.TextField(null=True, blank=True)
-    winner = models.ForeignKey(User, on_delete=models.CASCADE,related_name="winner", null=True, blank=True)
+    winner = models.CharField(max_length=20, null=True, blank=True)
     CHOICES=(
         (1,"Game Created. Waiting for opponent"),
         (2,"Game Started"),

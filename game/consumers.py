@@ -35,6 +35,7 @@ class GameConsumer(AsyncJsonWebsocketConsumer):
 
     async def disconnect(self, code):
         await self.disconn()
+        await self.opp_offline()
 
     async def join_room(self, data):
         await self.channel_layer.group_add(
@@ -47,6 +48,21 @@ class GameConsumer(AsyncJsonWebsocketConsumer):
             "pgn": data[1],
             "opp_online": data[2]
         })
+
+    async def opp_offline(self):
+        await self.channel_layer.group_send(
+            str(self.game_id),
+            {
+                "type": "offline.opp",
+                'sender_channel_name': self.channel_name
+            }
+        )
+    
+    async def offline_opp(self,event):
+        if self.channel_name != event['sender_channel_name']:
+            await self.send_json({
+                "command":"opponent-offline",
+            })
 
     async def opp_online(self):
         await self.channel_layer.group_send(
