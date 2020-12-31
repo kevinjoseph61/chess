@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-    <title>Log In</title>
+    <title>Register</title>
     <link rel="shortcut icon" href="/static/favicon.ico" type="image/x-icon">
 
     <!--CSS CDNs-->
@@ -69,33 +69,17 @@
         border-bottom-left-radius: 0;
         }
         .form-signin input[type="password"] {
-        margin-bottom: 10px;
         border-top-left-radius: 0;
         border-top-right-radius: 0;
         }
     </style>
   </head>
   <body class="text-center">
-    <form class="form-signin" method="post" action="{% url 'login' %}">
+    <form class="form-signin" method="post" action="{% url 'register' %}">
       {% csrf_token %}
       <img class="mb-1" alt="" width="100" height="100" src="/static/chess.png">
       <h1 class="h3 mb-3 font-weight-normal">Chess Gang</h1>
-      {% if form.errors %}
-        {% for field in form %}
-          {% for error in field.errors %}
-            <div class="alert alert-danger">
-              <span type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></span>
-              <strong>{{field.name|title}}:</strong> {{ error|escape }}
-            </div>
-          {% endfor %}
-        {% endfor %}
-        {% for error in form.non_field_errors %}
-          <div class="alert alert-danger">
-            <span type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></span>
-            <strong>{{ error|escape|title }}</strong>
-          </div>
-        {% endfor %}
-      {% endif %}
+      <h4 class="mb-3 font-weight-normal">Register</h4>
       {% if messages %}
         {% for message in messages %}
           <div class="alert {{message.tags}} alert-dismissible" role="alert">
@@ -106,10 +90,18 @@
       {% endif %}
       <label for="id_username" class="sr-only">Username</label>
       <input type="text" name="username" id="id_username" class="form-control" placeholder="Username" required autofocus>
+      <label for="id_fname" class="sr-only">First Name</label>
+      <input type="text" name="fname" id="id_fname" class="form-control" placeholder="First Name" required>
+      <label for="id_lname" class="sr-only">Last Name</label>
+      <input type="text" name="lname" id="id_lname" class="form-control" placeholder="Last Name" required>
+      <label for="id_email" class="sr-only">Email</label>
+      <input type="email" name="email" id="id_email" class="form-control" placeholder="Email ID" required>
       <label for="id_password" class="sr-only">Password</label>
       <input type="password" name="password" id="id_password" class="form-control" placeholder="Password" required>
-      <button class="btn btn-lg btn-primary btn-block mb-1" type="submit">Sign in</button>
-      <h6 class="font-weight-normal">Don't have an account yet? <br> <a href="/register">Create one now!</a></h6>
+      <label for="id_passwordconf" class="sr-only">Password</label>
+      <input type="password" name="passwordconf" id="id_passwordconf" class="form-control mb-2" placeholder="Confirm Password" required>
+      <button class="btn btn-lg btn-primary btn-block mb-1" type="submit">Register</button>
+      <h6 class="font-weight-normal">Already have an account? <br> <a href="/">Login now!</a></h6>
     </form>
   </body>
 </html>

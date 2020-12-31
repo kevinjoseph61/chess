@@ -63,6 +63,7 @@ class GameConsumer(AsyncJsonWebsocketConsumer):
             await self.send_json({
                 "command":"opponent-offline",
             })
+            print("sending offline")
 
     async def opp_online(self):
         await self.channel_layer.group_send(

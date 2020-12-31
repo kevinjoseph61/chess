@@ -1,0 +1,57 @@
+{% extends "layout.html" %}
+
+{%block title%}Create Game{% endblock %}
+  
+{% block navbar %}
+    <ul class="navbar-nav mr-auto">
+      <li class="nav-item">
+        <a class="nav-link" href="/">Lobby </a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" href="/">Single Player</a>
+	    </li>
+      <li class="nav-item">
+        <a class="nav-link" href="/">Ongoing Games</a>
+		  </li>
+      <li class="nav-item">
+        <a class="nav-link" href="/">Completed Games</a>
+		  </li>
+    </ul>
+    <ul class="navbar-nav ml-auto">
+      <li class="nav-item">
+        <a class="nav-link" href="/accounts/logout">Logout</a>
+      </li>
+      <li class="nav-item">
+      	<a class="nav-link active"><b>Hello, {{ user.username }}</b></a>
+      </li>
+	</ul>
+{% endblock %}
+
+{% block body %}
+  <div class="container mt-5 offset-2 col-8">
+      <div>
+        <form class="" action="{% url 'create' %}" method="POST">
+          {% csrf_token %} 
+          <div class="row">
+            <div class="col-12 p-2">
+              <label for="username" class="form-label">Opponent Username (leave blank to display game on lobby) </label>
+              <div class="input-group">
+                <span class="input-group-text">@</span>
+                <input type="text" class="form-control" id="username" name="username" placeholder="Username">
+              </div>
+            </div>
+            <div class="col-12 p-2">
+              <label for="side" class="form-label">Side</label>
+              <select class="custom-select" id="side" name="side" required>
+                <option value="white">White</option>
+                <option value="black">Black</option>
+              </select>
+            </div>
+            <button class="btn btn-primary m-3" type="submit">Create Game</button>
+          </div>
+        </form>
+      </div>
+    </div>
+</div>
+
+{% endblock %}

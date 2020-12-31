@@ -13,7 +13,7 @@
 {% block navbar %}
     <ul class="navbar-nav mr-auto">
       <li class="nav-item">
-        <a class="nav-link">Lobby </a>
+        <a class="nav-link" href="/">Lobby </a>
       </li>
       <li class="nav-item">
         <a class="nav-link" href="/">Single Player</a>
@@ -27,7 +27,7 @@
     </ul>
     <ul class="navbar-nav ml-auto">
       <li class="nav-item">
-        <a class="nav-link" href="/">Logout</a>
+        <a class="nav-link" href="/accounts/logout">Logout</a>
       </li>
       <li class="nav-item">
       	<a class="nav-link active"><b>Hello, {{ user.username }}</b></a>
@@ -53,13 +53,11 @@
   </div>
 
   <div id="myBoard" style="width: 400px; margin-left: auto; margin-right: auto;" class="p-2"></div>
-  <label><b>Status:</b></label>
-  <div id="status">Please wait for connection establishment...</div>
-  <label><b>FEN:</b></label>
-  <div id="fen"></div>
-  <label><b>PGN:</b></label>
-  <div id="pgn"></div>
-
+  <div style="text-align: center">
+    <b>Status:</b><p id="status">Please wait for connection establishment...</p>
+    <b>FEN:</b><p id="fen"></p>
+    <b>PGN:</b><p id="pgn"></p>
+  </div>
 
   <script>
   var ws_scheme = window.location.protocol == "https:" ? "wss" : "ws";
@@ -146,12 +144,30 @@
     }
     if (game.in_checkmate()) {
       status = 'Game over, ' + moveColor + ' is in checkmate.'
+      $modalTitle.html("Game Over")
+      $modalBody.html(status)
+      $('#gameModal').modal({
+        keyboard: false,
+        backdrop: 'static'
+      }); 
     }
     else if (game.in_draw()) {
       status = 'Game over, drawn position'
+      $modalTitle.html("Game Over")
+      $modalBody.html(status)
+      $('#gameModal').modal({
+        keyboard: false,
+        backdrop: 'static'
+      });
     }
     else if (game.in_stalemate()) {
       status = 'Game over, stalemate'
+      $modalTitle.html("Game Over")
+      $modalBody.html(status)
+      $('#gameModal').modal({
+        keyboard: false,
+        backdrop: 'static'
+      });
     }
     else {
       status = moveColor + ' to move'
@@ -199,7 +215,9 @@
       }
       board = Chessboard('myBoard', config)
       orientation=data.orientation;
-      game.load_pgn(data.pgn)
+      if(data.pgn){
+        game.load_pgn(data.pgn)
+      }
       board.position(game.fen());
       updateStatus();
       if(data.opp_online!=true) {
