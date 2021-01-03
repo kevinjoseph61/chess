@@ -30,6 +30,8 @@ class GameConsumer(AsyncJsonWebsocketConsumer):
         try:
             if command == "new-move":
                 await self.new_move(content["source"],content["target"],content["fen"],content["pgn"])
+            elif command == "game-over":
+                await self.game_over(content["result"])
         except:
             pass
 
@@ -103,6 +105,15 @@ class GameConsumer(AsyncJsonWebsocketConsumer):
                 "pgn": event["pgn"],
             })
         await self.update(event["fen"],event["pgn"])
+
+    @database_sync_to_async
+    def game_over(self, result):
+        game = Game.objects.all().filter(id=self.game_id)[0]
+        if game.status == 3:
+            return
+        game.winner = result
+        game.status = 3
+        game.save()
 
     @database_sync_to_async
     def verify(self, game_id):

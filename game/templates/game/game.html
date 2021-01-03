@@ -19,10 +19,10 @@
         <a class="nav-link" href="/">Single Player</a>
 		  </li>
       <li class="nav-item">
-        <a class="nav-link" href="/">Ongoing Games</a>
+        <a class="nav-link" href="/ongoing">Ongoing Games</a>
 		  </li>
       <li class="nav-item">
-        <a class="nav-link" href="/">Completed Games</a>
+        <a class="nav-link" href="/completed">Completed Games</a>
 		  </li>
     </ul>
     <ul class="navbar-nav ml-auto">
@@ -144,6 +144,10 @@
     }
     if (game.in_checkmate()) {
       status = 'Game over, ' + moveColor + ' is in checkmate.'
+      if(moveColor === 'White')
+        socket.send(JSON.stringify({"command": "game-over","result": "Black wins"}));
+      else
+        socket.send(JSON.stringify({"command": "game-over","result": "White wins"}));
       $modalTitle.html("Game Over")
       $modalBody.html(status)
       $('#gameModal').modal({

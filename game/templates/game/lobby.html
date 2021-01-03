@@ -11,10 +11,10 @@
         <a class="nav-link" href="/">Single Player</a>
 		  </li>
       <li class="nav-item">
-        <a class="nav-link" href="/">Ongoing Games</a>
+        <a class="nav-link" href="/ongoing">Ongoing Games</a>
 		  </li>
       <li class="nav-item">
-        <a class="nav-link" href="/">Completed Games</a>
+        <a class="nav-link" href="/completed">Completed Games</a>
 		  </li>
     </ul>
     <ul class="navbar-nav ml-auto">
@@ -30,7 +30,7 @@
 {% block body %}
   <div class="jumbotron">
     <div class="container">
-      <h1 class="display-3">Chess Gang</h1>
+      <h1 class="display-3">Chess Gang <img class="mb-1" alt="" width="100" height="100" src="/static/chess.png"></h1> 
       <p>Welcome to Chess Gang! Play real-time multiplayer chess with your friends or just practice on Single Player Mode</p>
       <p><a class="btn btn-primary btn-lg" href="/create" role="button">Create a Game &raquo;</a></p>
     </div>
@@ -55,5 +55,28 @@
       </div>
     </div> 
     <hr>
-  </div> 
+  </div>
+
+  <div class="container">
+    <h2>Join a Public Game</h2> <br>
+    <div class="container" class="container align-items-stretch" style="display: flex; flex-direction: row; flex-wrap: wrap; align-items: baseline;">
+      {% for room in public %}
+        <div class="card border-primary m-1" style="width: 250px">
+          <div class="card-header text-center">
+            <h4 class="my-0 font-weight-normal">{{room.level}}</h4>
+          </div>
+          <div class="card-body">
+            <h6 class="card-text">Username: {{room.owner.username}}</h6>
+            <h6 class="card-text">Play as {{room.side}}</h6>
+            <a type="button" class="btn btn-lg btn-block btn-primary" href="{{room.link}}">Join Game</a>
+          </div>
+        </div>
+      {% empty %}
+        <p>There seems to be no public games right now. </p> <a class="btn btn-secondary mx-2" href="/create" role="button">Create &raquo;</a>
+      {% endfor %}
+    </div> 
+    <hr>
+  </div>
+  
+
 {% endblock %}

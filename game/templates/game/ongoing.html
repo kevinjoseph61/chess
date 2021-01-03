@@ -1,0 +1,66 @@
+{% extends "layout.html" %}
+
+{%block title%}Ongoing Games{% endblock %}
+  
+{% block navbar %}
+    <ul class="navbar-nav mr-auto">
+      <li class="nav-item">
+        <a class="nav-link" href="/">Lobby </a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" href="/">Single Player</a>
+	    </li>
+      <li class="nav-item">
+        <a class="nav-link active">Ongoing Games</a>
+		  </li>
+      <li class="nav-item">
+        <a class="nav-link" href="/completed">Completed Games</a>
+		  </li>
+    </ul>
+    <ul class="navbar-nav ml-auto">
+      <li class="nav-item">
+        <a class="nav-link" href="/accounts/logout">Logout</a>
+      </li>
+      <li class="nav-item">
+      	<a class="nav-link active"><b>Hello, {{ user.username }}</b></a>
+      </li>
+	</ul>
+{% endblock %}
+
+{% block body %}
+  <div class="container mt-4">
+    <h2>Your Public Games Awaiting Players</h2> <br>
+    <div class="container" class="container align-items-stretch" style="display: flex; flex-direction: row; flex-wrap: wrap; align-items: baseline;">
+      {% for room in public %}
+        <div class="card border-primary m-1" style="width: 250px">
+          <div class="card-header text-center">
+            <h4 class="my-0 font-weight-normal">{{room.level}}</h4>
+          </div>
+          <div class="card-body">
+            <h6 class="card-text">You Play as {{room.owner_side | title}}</h6>
+            <h6 class="card-text">Awaiting Player to Join</h6>
+          </div>
+        </div>
+      {% empty %}
+        <p>You have not created any public games! </p> <a class="btn btn-secondary mx-2" href="/create" role="button">Create &raquo;</a>
+      {% endfor %}
+    </div> 
+  </div>
+  <div class="container mt-4">
+    <h2>Your Games in Progress</h2> <br>
+    <div class="container" class="container align-items-stretch" style="display: flex; flex-direction: row; flex-wrap: wrap; align-items: baseline;">
+      {% for room in ongoing %}
+        <div class="card border-primary m-1" style="width: 250px">
+          <div class="card-body">
+            <h6 class="card-text">Against: {{room.opponent.username}}</h6>
+            <h6 class="card-text">You're Playing as {{room.side | title}}</h6>
+            <a type="button" class="btn btn-lg btn-block btn-primary" href="{{ room.link }}">Continue</a>
+          </div>
+        </div>
+      {% empty %}
+        <p>You do not have any Ongoing Games! </p> <a class="btn btn-secondary mx-2" href="/create" role="button">Create &raquo;</a>
+      {% endfor %}
+    </div> 
+  </div>
+
+{% endblock %}

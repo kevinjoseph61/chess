@@ -12,6 +12,7 @@ class Game(models.Model):
     fen = models.CharField(max_length=92, null=True, blank=True)
     pgn = models.TextField(null=True, blank=True)
     winner = models.CharField(max_length=20, null=True, blank=True)
+    level = models.CharField(max_length=15, null=True, blank=True)
     CHOICES=(
         (1,"Game Created. Waiting for opponent"),
         (2,"Game Started"),
