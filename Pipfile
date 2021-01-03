@@ -9,6 +9,8 @@ verify_ssl = true
 django = "*"
 channels = "*"
 channels-redis = "*"
+daphne = "*"
+asgimiddlewarestaticfile = "*"
 
 [requires]
 python_version = "3.8"

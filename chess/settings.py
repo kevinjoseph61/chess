@@ -85,6 +85,7 @@ CHANNEL_LAYERS = {
 }
 
 from django.contrib.messages import constants as messages
+from os import path
 
 MESSAGE_TAGS = {
     messages.DEBUG: 'alert-info',
@@ -148,3 +149,5 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/3.1/howto/static-files/
 
 STATIC_URL = '/static/'
+
+STATIC_ROOT = path.join(BASE_DIR, 'staticfiles')
