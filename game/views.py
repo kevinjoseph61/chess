@@ -92,6 +92,7 @@ class register(View):
         messages.add_message(request, messages.SUCCESS, "User successfully registered! Login now...")
         return HttpResponseRedirect("/accounts/login/")
 
+@login_required
 def ongoing(request):
     games = []
     l = Game.objects.all().filter(owner=request.user).filter(status=1)
@@ -111,6 +112,7 @@ def ongoing(request):
         games.append(x) 
     return render(request, "game/ongoing.html", {"public":l, "ongoing": games})
 
+@login_required
 def completed(request):
     games=[]
     g = Game.objects.all().filter(Q(owner=request.user) | Q(opponent=request.user)).filter(status=3)
