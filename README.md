@@ -1,8 +1,10 @@
 # chess
 ASGI Django Server to play Chess in real-time using Django Channels and Redis.
 
-Making Single Player mode with self-trained Chess AI soon.
+Single player mode in progress.
 
-Needs Redis running on port 6379 to work
+Master branch is for development Django server that needs Redis on port 6379 to function.
+
+Prod branch is deployment ready for Heroku. Go to https://chess-gang.herokuapp.com/ to view it.
 
 Still in progress...
