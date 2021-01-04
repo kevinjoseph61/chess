@@ -52,8 +52,26 @@
     </div>
   </div>
 
+  <div class="modal fade" id="resignModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h4 class="modal-title" id="modal-title">Confirm</h4>
+        </div>
+        <div class="modal-body">
+          <p id="modal-body">Are you sure you want to resign this game?</p>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-danger" id="yesRes">Yes</button>
+          <button class="btn btn-success" id="noRes">No</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div id="myBoard" style="width: 400px; margin-left: auto; margin-right: auto;" class="p-2"></div>
   <div style="text-align: center">
+    <button class="btn btn-danger" id="resign">Resign</button> <br>
     <b>Status:</b><p id="status">Please wait for connection establishment...</p>
     <b>FEN:</b><p id="fen"></p>
     <b>PGN:</b><p id="pgn"></p>
@@ -157,6 +175,7 @@
     }
     else if (game.in_draw()) {
       status = 'Game over, drawn position'
+      socket.send(JSON.stringify({"command": "game-over","result": "Game ended in drawn position"}));
       $modalTitle.html("Game Over")
       $modalBody.html(status)
       $('#gameModal').modal({
@@ -166,6 +185,7 @@
     }
     else if (game.in_stalemate()) {
       status = 'Game over, stalemate'
+      socket.send(JSON.stringify({"command": "game-over","result": "Game ended in stalemate"}));
       $modalTitle.html("Game Over")
       $modalBody.html(status)
       $('#gameModal').modal({
@@ -253,6 +273,40 @@
       board.position(game.fen());
       updateStatus()
     }
+    else if(data.command=="opponent-resigned") {
+      $modalTitle.html("Game over")
+      $modalBody.html("Your opponent has resigned from the game. You win!")
+      $('#gameModal').modal({
+        keyboard: false,
+        backdrop: 'static'
+      });
+    }
   }
+
+  $(document).on('click','#resign', function(){
+    $('#resignModal').modal({
+      keyboard: false,
+      backdrop: 'static'
+    });
+  })
+  $(document).on('click','#noRes', function(){
+    $('#resignModal').modal('hide');
+    $('#resignModal').data('bs.modal',null);
+  })
+  $(document).on('click','#yesRes', function(){
+    if(orientation === 'white')
+      socket.send(JSON.stringify({"command": "resign","result": "Black wins"}));
+    else
+      socket.send(JSON.stringify({"command": "resign","result": "White wins"}));
+    $('#resignModal').modal('hide');
+    $('#resignModal').data('bs.modal',null);
+    $modalTitle.html("Game over")
+    $modalBody.html("You have resigned from the game. You lose!")
+    $('#gameModal').modal({
+      keyboard: false,
+      backdrop: 'static'
+    });
+  })
+
   </script>
 {% endblock %}

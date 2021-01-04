@@ -32,6 +32,9 @@ class GameConsumer(AsyncJsonWebsocketConsumer):
                 await self.new_move(content["source"],content["target"],content["fen"],content["pgn"])
             elif command == "game-over":
                 await self.game_over(content["result"])
+            elif command == "resign":
+                await self.resign()
+                await self.game_over(content["result"])
         except:
             pass
 
@@ -80,6 +83,21 @@ class GameConsumer(AsyncJsonWebsocketConsumer):
         if self.channel_name != event['sender_channel_name']:
             await self.send_json({
                 "command":"opponent-online",
+            })
+
+    async def resign(self):
+        await self.channel_layer.group_send(
+            str(self.game_id),
+            {
+                "type": "resign.game",
+                'sender_channel_name': self.channel_name
+            }
+        )
+    
+    async def resign_game(self,event):
+        if self.channel_name != event['sender_channel_name']:
+            await self.send_json({
+                "command":"opponent-resigned",
             })
 
     async def new_move(self, source, target, fen, pgn):
