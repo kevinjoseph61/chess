@@ -187,6 +187,13 @@
 
   updateStatus()
 
+  function keepAlive () {
+    if(socket.readyState == 1){
+      socket.send(JSON.stringify({"command": "keep-alive"}))
+      setTimeout(keepAlive,30000);
+    }
+  }
+
   socket.onclose = function () {
     $modalTitle.html("Connection closed")
     $modalBody.html("Connection closed unexpectedly please wait while we try to reconnect...")
@@ -199,6 +206,7 @@
   socket.onopen = function () {
     $('#gameModal').modal('hide');
     $('#gameModal').data('bs.modal',null);
+    keepAlive();
   }
 
   socket.onmessage = function (message) {

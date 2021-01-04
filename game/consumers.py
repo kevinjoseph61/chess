@@ -32,6 +32,8 @@ class GameConsumer(AsyncJsonWebsocketConsumer):
                 await self.new_move(content["source"],content["target"],content["fen"],content["pgn"])
             elif command == "game-over":
                 await self.game_over(content["result"])
+            elif command == "keep-alive":
+                pass
         except:
             pass
 
