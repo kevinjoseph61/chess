@@ -134,6 +134,14 @@
             "index": "pypi",
             "version": "==3.2.0"
         },
+        "chess": {
+            "hashes": [
+                "sha256:27920121dff243f88de2806f6364c9a9eaa67af59c1f183251c03ffdde4e0ac2",
+                "sha256:961fd5fe8a555758674d8997514fdf7a158885c31720de80564368864bb2a369"
+            ],
+            "markers": "python_version >= '3.7'",
+            "version": "==1.3.3"
+        },
         "constantly": {
             "hashes": [
                 "sha256:586372eb92059873e29eba4f9dec8381541b4d3834660707faf8ba59146dfc35",
@@ -167,15 +175,16 @@
                 "sha256:c22b692707f514de9013651ecb687f2abe4f35cf6fe292ece634e9f1737bc7e3"
             ],
             "index": "pypi",
+            "markers": "python_version >= '3.6'",
             "version": "==3.0.1"
         },
         "django": {
             "hashes": [
-                "sha256:5c866205f15e7a7123f1eec6ab939d22d5bde1416635cab259684af66d8e48a2",
-                "sha256:edb10b5c45e7e9c0fb1dc00b76ec7449aca258a39ffd613dbd078c51d19c9f03"
+                "sha256:2d78425ba74c7a1a74b196058b261b9733a8570782f4e2828974777ccca7edf7",
+                "sha256:efa2ab96b33b20c2182db93147a0c3cd7769d418926f9e9f140a60dca7c64ca9"
             ],
             "index": "pypi",
-            "version": "==3.1.4"
+            "version": "==3.1.5"
         },
         "hiredis": {
             "hashes": [
@@ -238,11 +247,11 @@
         },
         "idna": {
             "hashes": [
-                "sha256:320229aadbdfc597bc28876748cc0c9d04d476e0fe6caacaaddea146365d9f63",
-                "sha256:c9a26e10e5558412384fac891eefb41957831d31be55f1e2c98ed97a70abb969"
+                "sha256:5205d03e7bcbb919cc9c19885f9920d622ca52448306f2377daede5cf3faac16",
+                "sha256:c5b02147e01ea9920e6b0a3f1f7bb833612d507592c837a6c49552768f4054e1"
             ],
             "markers": "python_version >= '3.4'",
-            "version": "==3.0"
+            "version": "==3.1"
         },
         "incremental": {
             "hashes": [
@@ -343,6 +352,14 @@
             ],
             "markers": "python_version >= '2.7' and python_version not in '3.0, 3.1, 3.2, 3.3, 3.4'",
             "version": "==20.0.1"
+        },
+        "python-chess": {
+            "hashes": [
+                "sha256:8cad0388c42242d890ac6368ad64def15cd0165db033df0ad479492e266e5e6c",
+                "sha256:93b562f8f1124cb7bf56fb095e18743758e69dc6a028ccda0badcaa5c59d88c8"
+            ],
+            "index": "pypi",
+            "version": "==1.999"
         },
         "pytz": {
             "hashes": [

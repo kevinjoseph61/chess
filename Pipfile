@@ -11,6 +11,7 @@ channels = "*"
 channels-redis = "*"
 daphne = "*"
 asgimiddlewarestaticfile = "*"
+python-chess = "*"
 
 [requires]
 python_version = "3.8"

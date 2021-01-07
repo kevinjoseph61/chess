@@ -1,9 +1,9 @@
-from channels.generic.websocket import AsyncJsonWebsocketConsumer
+from channels.generic.websocket import AsyncJsonWebsocketConsumer, JsonWebsocketConsumer
 from channels.db import database_sync_to_async
 from .models import Game
 from django.contrib.auth.models import User
+from .chessAI import call_AI
 
-room=0
 
 class GameConsumer(AsyncJsonWebsocketConsumer):
     async def connect(self):
@@ -33,6 +33,11 @@ class GameConsumer(AsyncJsonWebsocketConsumer):
             elif command == "game-over":
                 await self.game_over(content["result"])
             elif command == "keep-alive":
+                pass
+            elif command == "resign":
+                await self.resign()
+                await self.game_over(content["result"])
+            else:
                 pass
         except:
             pass
@@ -82,6 +87,21 @@ class GameConsumer(AsyncJsonWebsocketConsumer):
         if self.channel_name != event['sender_channel_name']:
             await self.send_json({
                 "command":"opponent-online",
+            })
+
+    async def resign(self):
+        await self.channel_layer.group_send(
+            str(self.game_id),
+            {
+                "type": "resign.game",
+                'sender_channel_name': self.channel_name
+            }
+        )
+    
+    async def resign_game(self,event):
+        if self.channel_name != event['sender_channel_name']:
+            await self.send_json({
+                "command":"opponent-resigned",
             })
 
     async def new_move(self, source, target, fen, pgn):
@@ -171,3 +191,26 @@ class GameConsumer(AsyncJsonWebsocketConsumer):
         game.save()
         print("Saving game details")
 
+
+class SingleConsumer(JsonWebsocketConsumer):
+    def connect(self):
+        if self.scope["user"].is_anonymous:
+            self.close()
+            return
+        self.accept()
+        self.send_json({"command":"join", "orientation": "white"})
+
+    def receive_json(self, content):
+        command = content.get("command", None)
+        try:
+            if command == "new-move":
+                move = call_AI(content["pgn"])
+                print(move)
+                self.send_json({"command": "new-move", "move": move})
+            else: 
+                pass
+        except Exception as e:
+            print(f"Error: {e}")
+
+    def disconnect(self, code):
+        pass
