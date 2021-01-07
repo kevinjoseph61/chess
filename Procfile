@@ -1,1 +1,1 @@
-web: daphne chess.asgi:application --port $PORT --bind 0.0.0.0 -v2
+web: daphne pychess.asgi:application --port $PORT --bind 0.0.0.0 -v2
