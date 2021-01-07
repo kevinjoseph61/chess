@@ -1,0 +1,318 @@
+{% extends "layout.html" %}
+<!doctype html>
+
+{%block title%}Single Player Chess{% endblock %}
+
+{% block cdn %}
+  <link rel="stylesheet" href="https://unpkg.com/@chrisoakman/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.css" integrity="sha384-q94+BZtLrkL1/ohfjR8c6L+A6qzNH9R2hBLwyoAfu3i/WCvQjzL2RQJ3uNHDISdU" crossorigin="anonymous">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/reconnecting-websocket/1.0.0/reconnecting-websocket.min.js" integrity="sha512-B4skI5FiLurS86aioJx9VfozI1wjqrn6aTdJH+YQUmCZum/ZibPBTX55k5d9XM6EsKePDInkLVrN7vPmJxc1qA==" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@chrisoakman/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.js" integrity="sha384-8Vi8VHwn3vjQ9eUHUxex3JSN/NFqUg3QbPyX8kWyb93+8AC/pPWTzj+nHtbC5bxD" crossorigin="anonymous"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.2/chess.js" integrity="sha384-s3XgLpvmHyscVpijnseAmye819Ee3yaGa8NxstkJVyA6nuDFjt59u1QvuEl/mecz" crossorigin="anonymous"></script>
+{% endblock %}
+
+{% block navbar %}
+    <ul class="navbar-nav mr-auto">
+      <li class="nav-item">
+        <a class="nav-link" href="/">Lobby </a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link active">Single Player</a>
+		  </li>
+      <li class="nav-item">
+        <a class="nav-link" href="/ongoing">Ongoing Games</a>
+		  </li>
+      <li class="nav-item">
+        <a class="nav-link" href="/completed">Completed Games</a>
+		  </li>
+    </ul>
+    <ul class="navbar-nav ml-auto">
+      <li class="nav-item">
+        <a class="nav-link" href="/accounts/logout">Logout</a>
+      </li>
+      <li class="nav-item">
+      	<a class="nav-link active"><b>Hello, {{ user.username }}</b></a>
+      </li>
+	</ul>
+{% endblock %}
+
+{% block body %}
+  <div class="modal fade" id="gameModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h4 class="modal-title" id="modal-title">Please wait...</h4>
+        </div>
+        <div class="modal-body">
+          <p id="modal-body">Wait for the AI to connect to the game</p>
+        </div>
+        <div class="modal-footer">
+          <a href="/" class="btn btn-danger">Return to Lobby</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="resignModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h4 class="modal-title" id="modal-title">Confirm</h4>
+        </div>
+        <div class="modal-body">
+          <p id="modal-body">Are you sure you want to resign this game?</p>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-danger" id="yesRes">Yes</button>
+          <button class="btn btn-success" id="noRes">No</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="flipModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h4 class="modal-title" id="modal-title">Confirm</h4>
+        </div>
+        <div class="modal-body">
+          <p id="modal-body">Are you sure you want to flip the board? Flip if only you are stuck!</p>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-danger" id="yesFlip">Yes</button>
+          <button class="btn btn-success" id="noFlip">No</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="alert alert-danger mx-2" style="text-align: center; display:none;" id="AI">Please wait for the AI to make a move <img src="/static/loading.gif" style="width:30px"></div>
+  <div id="myBoard" style="width: 400px; margin-left: auto; margin-right: auto;" class="p-2"></div>
+  <div style="text-align: center">
+    <button class="btn btn-danger mx-1" id="resign">Resign</button> <button class="btn btn-success mx-1" id="flip">Flip</button> <br>
+    <b>Status:</b><p id="status">Please wait for connection establishment...</p>
+    <b>FEN:</b><p id="fen"></p>
+    <b>PGN:</b><p id="pgn"></p>
+  </div>
+
+  <script>
+  var ws_scheme = window.location.protocol == "https:" ? "wss" : "ws";
+  var ws_path = ws_scheme + '://' + window.location.host + "/single/";
+  console.log("Connecting to " + ws_path);
+  var socket = new ReconnectingWebSocket(ws_path);
+  var board = null
+  var game = new Chess()
+  var $status = $('#status')
+  var $fen = $('#fen')
+  var $pgn = $('#pgn')
+  var $modalTitle = $('#modal-title')
+  var $modalBody = $('#modal-body')
+  var orientation = null
+
+  var whiteSquareGrey = '#a9a9a9'
+  var blackSquareGrey = '#696969'
+
+
+  function removeGreySquares () {
+    $('#myBoard .square-55d63').css('background', '')
+  }
+
+  function greySquare (square) {
+    var $square = $('#myBoard .square-' + square)
+
+    var background = whiteSquareGrey
+    if ($square.hasClass('black-3c85d')) {
+      background = blackSquareGrey
+    }
+
+    $square.css('background', background)
+  }
+
+  function onDragStart (source, piece, position, orientation) {
+    if (game.game_over()) return false
+    return !((orientation === 'white' && piece.search(/^w/) === -1) || (orientation === 'black' && piece.search(/^b/) === -1));
+  }
+
+  function onDrop (source, target) {
+    var move = game.move({
+      from: source,
+      to: target,
+      promotion: 'q'
+    })
+    if (move === null) return 'snapback'
+    updateStatus()
+    socket.send(JSON.stringify({"command": "new-move", "pgn": game.pgn()}));
+    $("#AI").show(500);
+    $("#flip").prop('disabled',true);
+  }
+
+  function onSnapEnd () {
+    board.position(game.fen())
+  }
+
+  function onMouseoverSquare (square, piece) {
+    if (!((orientation === 'white' && game.turn()==='w') || (orientation === 'black' && game.turn()==='b')))
+      return
+
+    var moves = game.moves({
+      square: square,
+      verbose: true
+    })
+    if (moves.length === 0) return
+    greySquare(square)
+    for (var i = 0; i < moves.length; i++) {
+      greySquare(moves[i].to)
+    }
+  }
+
+  function onMouseoutSquare (square, piece) {
+    removeGreySquares()
+  }
+
+  function onSnapEnd () {
+    board.position(game.fen())
+  }
+
+  function updateStatus () {
+    var status = ''
+
+    var moveColor = 'White'
+    if (game.turn() === 'b') {
+      moveColor = 'Black'
+    }
+    if (game.in_checkmate()) {
+      status = 'Game over, ' + moveColor + ' is in checkmate.'
+      $modalTitle.html("Game Over")
+      $modalBody.html(status)
+      $('#gameModal').modal({
+        keyboard: false,
+        backdrop: 'static'
+      }); 
+    }
+    else if (game.in_draw()) {
+      status = 'Game over, drawn position'
+      $modalTitle.html("Game Over")
+      $modalBody.html(status)
+      $('#gameModal').modal({
+        keyboard: false,
+        backdrop: 'static'
+      });
+    }
+    else if (game.in_stalemate()) {
+      status = 'Game over, stalemate'
+      $modalTitle.html("Game Over")
+      $modalBody.html(status)
+      $('#gameModal').modal({
+        keyboard: false,
+        backdrop: 'static'
+      });
+    }
+    else {
+      status = moveColor + ' to move'
+      if (game.in_check()) {
+        status += ', ' + moveColor + ' is in check'
+      }
+    }
+
+    $status.html(status)
+    $fen.html(game.fen())
+    $pgn.html(game.pgn())
+  }
+
+  updateStatus()
+
+  socket.onclose = function () {
+    $modalTitle.html("Connection closed")
+    $modalBody.html("Connection closed unexpectedly please wait while we try to reconnect...")
+    $('#gameModal').modal({
+      keyboard: false,
+      backdrop: 'static'
+    });
+  }
+
+  socket.onopen = function () {
+    $('#gameModal').modal('hide');
+    $('#gameModal').data('bs.modal',null);
+  }
+
+  socket.onmessage = function (message) {
+    console.log("Got websocket message " + message.data);
+    var data = JSON.parse(message.data);
+    if (data.command=="join") {
+      console.log("joining room as "+data.orientation)
+      var config = {
+      draggable: true,
+      position: 'start',
+      onDragStart: onDragStart,
+      onDrop: onDrop,
+      onSnapEnd: onSnapEnd,
+      onMouseoutSquare: onMouseoutSquare,
+      onMouseoverSquare: onMouseoverSquare,
+      pieceTheme: '/static/chessboard/{piece}.png',
+      orientation: data.orientation
+      }
+      board = Chessboard('myBoard', config)
+      orientation=data.orientation;
+      board.position(game.fen());
+      updateStatus();
+    }
+    else if(data.command=="new-move") {
+      game.move(
+          data["move"],
+          {sloppy:true}
+        );
+      board.position(game.fen());
+      updateStatus()
+      $("#AI").hide(500);
+      $("#flip").prop('disabled',false);
+    }
+    else{
+      console.log("Illegal message recieved from server");
+    }
+  }
+
+  $(document).on('click','#resign', function(){
+    $('#resignModal').modal({
+      keyboard: false,
+      backdrop: 'static'
+    });
+  })
+  $(document).on('click','#noRes', function(){
+    $('#resignModal').modal('hide');
+    $('#resignModal').data('bs.modal',null);
+  })
+  $(document).on('click','#yesRes', function(){
+    $('#resignModal').modal('hide');
+    $('#resignModal').data('bs.modal',null);
+    $modalTitle.html("Game over")
+    $modalBody.html("You have resigned from the game. You lose!")
+    $('#gameModal').modal({
+      keyboard: false,
+      backdrop: 'static'
+    });
+  })
+
+  $(document).on('click','#flip', function(){
+    $('#flipModal').modal({
+      keyboard: false,
+      backdrop: 'static'
+    });
+  })
+  $(document).on('click','#noFlip', function(){
+    $('#flipModal').modal('hide');
+    $('#flipModal').data('bs.modal',null);
+  })
+  $(document).on('click','#yesFlip', function(){
+    board.flip()
+    if(orientation==="white")
+      orientation="black";
+    else
+      orientation="white";
+    socket.send(JSON.stringify({"command": "new-move", "pgn": game.pgn()}));
+    $("#AI").show(500);
+    $("#flip").prop('disabled',true);
+    $('#flipModal').modal('hide');
+    $('#flipModal').data('bs.modal',null);
+  })
+
+  </script>
+{% endblock %}

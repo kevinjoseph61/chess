@@ -9,6 +9,7 @@ verify_ssl = true
 django = "*"
 channels = "*"
 channels-redis = "*"
+python-chess = "*"
 
 [requires]
 python_version = "3.8"

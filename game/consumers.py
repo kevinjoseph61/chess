@@ -1,9 +1,9 @@
-from channels.generic.websocket import AsyncJsonWebsocketConsumer
+from channels.generic.websocket import AsyncJsonWebsocketConsumer, JsonWebsocketConsumer
 from channels.db import database_sync_to_async
 from .models import Game
 from django.contrib.auth.models import User
+from .chessAI import call_AI
 
-room=0
 
 class GameConsumer(AsyncJsonWebsocketConsumer):
     async def connect(self):
@@ -187,3 +187,26 @@ class GameConsumer(AsyncJsonWebsocketConsumer):
         game.save()
         print("Saving game details")
 
+
+class SingleConsumer(JsonWebsocketConsumer):
+    def connect(self):
+        if self.scope["user"].is_anonymous:
+            self.close()
+            return
+        self.accept()
+        self.send_json({"command":"join", "orientation": "white"})
+
+    def receive_json(self, content):
+        command = content.get("command", None)
+        try:
+            if command == "new-move":
+                move = call_AI(content["pgn"])
+                print(move)
+                self.send_json({"command": "new-move", "move": move})
+            else: 
+                pass
+        except Exception as e:
+            print(f"Error: {e}")
+
+    def disconnect(self, code):
+        pass

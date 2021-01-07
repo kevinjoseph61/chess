@@ -16,7 +16,7 @@
         <a class="nav-link" href="/">Lobby </a>
       </li>
       <li class="nav-item">
-        <a class="nav-link" href="/">Single Player</a>
+        <a class="nav-link" href="/single">Single Player</a>
 		  </li>
       <li class="nav-item">
         <a class="nav-link" href="/ongoing">Ongoing Games</a>
@@ -268,7 +268,8 @@
     else if(data.command=="new-move") {
       game.move({
           from: data.source,
-          to: data.target
+          to: data.target,
+          promotion: 'q'
         });
       board.position(game.fen());
       updateStatus()

@@ -42,6 +42,10 @@ def game(request, game_id):
             return HttpResponseRedirect(reverse("lobby"))
     return render(request, "game/game.html", {"game_id":game_id})
 
+@login_required
+def single(request):
+    return render(request, "game/single.html")
+
 class createGame(LoginRequiredMixin, View):
     def get(self, request):
         return render(request,"game/create.html")
