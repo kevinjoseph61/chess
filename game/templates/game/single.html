@@ -88,7 +88,13 @@
   <div class="alert alert-danger mx-2" style="text-align: center; display:none;" id="AI">Please wait for the AI to make a move <img src="/static/loading.gif" style="width:30px"></div>
   <div id="myBoard" style="width: 400px; margin-left: auto; margin-right: auto;" class="p-2"></div>
   <div style="text-align: center">
-    <button class="btn btn-danger mx-1" id="resign">Resign</button> <button class="btn btn-success mx-1" id="flip">Flip</button> <br>
+    <button class="btn btn-danger m-1" id="resign">Resign</button> <button class="btn btn-success m-1" id="flip">Flip</button> <button class="btn btn-info m-1" id="undo">Undo</button>
+    AI level: 
+    <select class="custom-select" id="level" style="width:150px" onchange="AIchange(this)">
+      <option value="3">Advanced</option>
+      <option value="2">Intermediate</option>
+      <option value="1">Beginner</option>
+    </select> <br>
     <b>Status:</b><p id="status">Please wait for connection establishment...</p>
     <b>FEN:</b><p id="fen"></p>
     <b>PGN:</b><p id="pgn"></p>
@@ -107,6 +113,7 @@
   var $modalTitle = $('#modal-title')
   var $modalBody = $('#modal-body')
   var orientation = null
+  var level = 3
 
   var whiteSquareGrey = '#a9a9a9'
   var blackSquareGrey = '#696969'
@@ -140,9 +147,10 @@
     })
     if (move === null) return 'snapback'
     updateStatus()
-    socket.send(JSON.stringify({"command": "new-move", "pgn": game.pgn()}));
+    socket.send(JSON.stringify({"command": "new-move", "pgn": game.pgn(), "level":level}));
     $("#AI").show(500);
     $("#flip").prop('disabled',true);
+    $("#undo").prop('disabled',true);
   }
 
   function onSnapEnd () {
@@ -220,6 +228,11 @@
 
   updateStatus()
 
+  function AIchange(selectObject) {
+    level = selectObject.value;
+    console.log("Level changed")
+  }
+
   socket.onclose = function () {
     $modalTitle.html("Connection closed")
     $modalBody.html("Connection closed unexpectedly please wait while we try to reconnect...")
@@ -264,6 +277,7 @@
       updateStatus()
       $("#AI").hide(500);
       $("#flip").prop('disabled',false);
+      $("#undo").prop('disabled',false);
     }
     else{
       console.log("Illegal message recieved from server");
@@ -307,11 +321,19 @@
       orientation="black";
     else
       orientation="white";
-    socket.send(JSON.stringify({"command": "new-move", "pgn": game.pgn()}));
+    socket.send(JSON.stringify({"command": "new-move", "pgn": game.pgn(), "level": level}));
     $("#AI").show(500);
     $("#flip").prop('disabled',true);
+    $("#undo").prop('disabled',true);
     $('#flipModal').modal('hide');
     $('#flipModal').data('bs.modal',null);
+  })
+
+  $(document).on('click','#undo', function(){
+    game.undo();
+    game.undo();
+    board.position(game.fen());
+    updateStatus()
   })
 
   </script>
