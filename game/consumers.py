@@ -204,7 +204,7 @@ class SingleConsumer(JsonWebsocketConsumer):
         command = content.get("command", None)
         try:
             if command == "new-move":
-                move = call_AI(content["pgn"])
+                move = call_AI(content["pgn"], int(content["level"]))
                 print(move)
                 self.send_json({"command": "new-move", "move": move})
             else: 

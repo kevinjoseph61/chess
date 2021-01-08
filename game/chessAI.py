@@ -169,7 +169,7 @@ def selectmove(depth):
             board.pop()
         return bestMove.uci()
 
-def call_AI(pgn):
+def call_AI(pgn, level):
     global board
     g = None
     if not pgn:
@@ -177,4 +177,4 @@ def call_AI(pgn):
     else:
         g = chess.pgn.read_game(io.StringIO(pgn)).end()
         board = g.board()
-    return selectmove(3)
+    return selectmove(level)
