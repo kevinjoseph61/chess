@@ -10,6 +10,8 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/3.1/ref/settings/
 """
 
+from os import path
+from django.contrib.messages import constants as messages
 from pathlib import Path
 import os
 
@@ -28,7 +30,7 @@ DEBUG = False
 
 ALLOWED_HOSTS = ['*']
 
-#AUTH_USER_MODEL = 'game.models.User'
+# AUTH_USER_MODEL = 'game.models.User'
 
 LOGIN_REDIRECT_URL = '/'
 LOGOUT_REDIRECT_URL = '/'
@@ -83,8 +85,6 @@ CHANNEL_LAYERS = {
     },
 }
 
-from django.contrib.messages import constants as messages
-from os import path
 
 MESSAGE_TAGS = {
     messages.DEBUG: 'alert-info',
