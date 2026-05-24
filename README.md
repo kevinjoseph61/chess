@@ -127,11 +127,13 @@ python -m training.export_onnx --quantize
 
 ## Deployment (Render)
 
-See the [`render` branch](../../tree/render) for Render-specific configuration.
+See the [`render` branch](../../tree/render) for full deployment instructions including environment variables, build configuration, and architecture diagram.
 
-1. Create a Redis instance on Render
-2. Set env vars: `REDIS_URL`, `SECRET_KEY`, `GROQ_API_KEY`
-3. Build: `sh build.sh` | Start: `daphne pychess.asgi:application --bind 0.0.0.0 -v2`
+**Quick start:**
+1. Create a Web Service on Render pointing to the `render` branch
+2. Set up a [Neon](https://neon.tech) PostgreSQL database (free tier)
+3. Set environment variables: `DATABASE_URL`, `SECRET_KEY`, `GROQ_API_KEY`, `ALLOWED_HOSTS`, `CSRF_TRUSTED_ORIGINS`
+4. Build: `sh build.sh` | Start: `daphne pychess.asgi:application --bind 0.0.0.0 --port $PORT -v2`
 
 ---
 
