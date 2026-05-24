@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/3.1/ref/settings/
 
 from pathlib import Path
 import os
+import dj_database_url
 
 # Load .env file
 _env_path = Path(__file__).resolve().parent.parent / '.env'
@@ -34,12 +35,14 @@ GROQ_API_KEY = os.environ.get('GROQ_API_KEY', '')
 # See https://docs.djangoproject.com/en/3.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = "is#6^huv&o2mn#^*!pyy^(b-_-@#y%qsu#=qx++0!x^#k0!q&="
+SECRET_KEY = os.environ.get("SECRET_KEY", "is#6^huv&o2mn#^*!pyy^(b-_-@#y%qsu#=qx++0!x^#k0!q&=")
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.environ.get("DEBUG", "False").lower() == "true"
 
-ALLOWED_HOSTS = ["*"]
+ALLOWED_HOSTS = os.environ.get("ALLOWED_HOSTS", "*").split(",")
+
+CSRF_TRUSTED_ORIGINS = os.environ.get("CSRF_TRUSTED_ORIGINS", "").split(",") if os.environ.get("CSRF_TRUSTED_ORIGINS") else []
 
 # AUTH_USER_MODEL = 'game.models.User'
 
@@ -62,6 +65,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -88,12 +92,17 @@ TEMPLATES = [
     },
 ]
 
-redis_host = os.environ.get("REDIS_HOST", "localhost")
+redis_host = os.environ.get("REDIS_URL", os.environ.get("REDIS_HOST", "redis://localhost:6379"))
+if redis_host.startswith("redis://") or redis_host.startswith("rediss://"):
+    _redis_hosts = [redis_host]
+else:
+    _redis_hosts = [(redis_host, 6379)]
+
 CHANNEL_LAYERS = {
     "default": {
         "BACKEND": "channels_redis.core.RedisChannelLayer",
         "CONFIG": {
-            "hosts": [(redis_host, 6379)],
+            "hosts": _redis_hosts,
         },
     },
 }
@@ -118,10 +127,11 @@ WSGI_APPLICATION = "pychess.wsgi.application"
 # https://docs.djangoproject.com/en/3.1/ref/settings/#databases
 
 DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
-    }
+    "default": dj_database_url.config(
+        default="sqlite:///db.sqlite3",
+        conn_max_age=600,
+        conn_health_checks=True,
+    )
 }
 
 
@@ -162,3 +172,5 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/3.1/howto/static-files/
 
 STATIC_URL = "/static/"
+STATIC_ROOT = BASE_DIR / "staticfiles"
+STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
