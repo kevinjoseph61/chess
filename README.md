@@ -20,7 +20,7 @@ A real-time chess platform with an AlphaZero-style AI engine and live LLM coachi
 - **Eval bar** — Visual evaluation bar showing position advantage
 - **Score tracking** — Cumulative score based on move quality
 
-![AI Coach in action](docs/screenshots/coaching.png)
+![AI Coach in action](docs/screenshots/chess-ai-coach.gif)
 
 ### ⚔️ Real-Time Multiplayer
 - **WebSocket-based** — Instant move synchronization via Django Channels + Redis
