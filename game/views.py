@@ -2,12 +2,14 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from .models import Game
-from django.http import HttpResponseRedirect
+from django.http import HttpResponseRedirect, JsonResponse
 from django.urls import reverse
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.views import View
 from django.contrib.auth.models import User
 from django.db.models import Q
+from django.views.decorators.http import require_POST
+import json
 
 @login_required
 def index(request):
@@ -158,3 +160,48 @@ def completed(request):
                 x["result"] = i.winner
         games.append(x)
     return render(request, "game/completed.html", {"completed": games})
+
+
+@login_required
+@require_POST
+def analyze(request):
+    """API endpoint for LLM-powered game analysis."""
+    try:
+        data = json.loads(request.body)
+        pgn = data.get('pgn', '')
+        if not pgn or len(pgn) < 5:
+            return JsonResponse({'error': 'No game data to analyze'}, status=400)
+        # Limit PGN length to prevent abuse
+        if len(pgn) > 10000:
+            return JsonResponse({'error': 'Game too long for analysis'}, status=400)
+
+        from .analysis import analyze_game
+        result = analyze_game(pgn)
+        return JsonResponse(result)
+    except json.JSONDecodeError:
+        return JsonResponse({'error': 'Invalid request'}, status=400)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+
+@login_required
+@require_POST
+def coach_move_api(request):
+    """API endpoint for live move coaching."""
+    try:
+        data = json.loads(request.body)
+        pgn = data.get('pgn', '')
+        category = data.get('category', '')
+        player_color = data.get('player_color', 'white')
+        if not pgn or not category:
+            return JsonResponse({'error': 'Missing data'}, status=400)
+        if len(pgn) > 10000:
+            return JsonResponse({'error': 'Game too long'}, status=400)
+
+        from .analysis import coach_move
+        result = coach_move(pgn, category, player_color)
+        return JsonResponse(result)
+    except json.JSONDecodeError:
+        return JsonResponse({'error': 'Invalid request'}, status=400)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
