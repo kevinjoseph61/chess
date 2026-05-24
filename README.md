@@ -2,7 +2,7 @@
 
 A real-time chess platform with an AlphaZero-style AI engine and live LLM coaching — all running in the browser.
 
-> **Looking for the original version?** The classic Chess Gang (Django + Redis multiplayer) is available on the [`master` branch](../../tree/master).
+> **Looking for the original version?** The classic Chess Gang (Django + Redis multiplayer) is available on the [`master` branch](../../tree/master). This branch (`main`) contains the upgraded AI + coaching version.
 
 ![Lobby](docs/screenshots/lobby.png)
 
