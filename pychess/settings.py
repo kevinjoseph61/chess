@@ -15,34 +15,43 @@ import os
 import dj_database_url
 
 # Load .env file
-_env_path = Path(__file__).resolve().parent.parent / '.env'
+_env_path = Path(__file__).resolve().parent.parent / ".env"
 if _env_path.exists():
     with open(_env_path) as f:
         for line in f:
             line = line.strip()
-            if line and not line.startswith('#') and '=' in line:
-                key, val = line.split('=', 1)
+            if line and not line.startswith("#") and "=" in line:
+                key, val = line.split("=", 1)
                 os.environ.setdefault(key.strip(), val.strip())
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # Groq API key for LLM coaching
-GROQ_API_KEY = os.environ.get('GROQ_API_KEY', '')
+GROQ_API_KEY = os.environ.get("GROQ_API_KEY", "")
 
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/3.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.environ.get("SECRET_KEY", "is#6^huv&o2mn#^*!pyy^(b-_-@#y%qsu#=qx++0!x^#k0!q&=")
+SECRET_KEY = os.environ.get(
+    "SECRET_KEY", "is#6^huv&o2mn#^*!pyy^(b-_-@#y%qsu#=qx++0!x^#k0!q&="
+)
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get("DEBUG", "False").lower() == "true"
 
 ALLOWED_HOSTS = os.environ.get("ALLOWED_HOSTS", "*").split(",")
 
-CSRF_TRUSTED_ORIGINS = os.environ.get("CSRF_TRUSTED_ORIGINS", "").split(",") if os.environ.get("CSRF_TRUSTED_ORIGINS") else []
+CSRF_TRUSTED_ORIGINS = (
+    os.environ.get("CSRF_TRUSTED_ORIGINS", "").split(",")
+    if os.environ.get("CSRF_TRUSTED_ORIGINS")
+    else []
+)
+
+# Trust Render's reverse proxy headers
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
 # AUTH_USER_MODEL = 'game.models.User'
 
@@ -92,7 +101,9 @@ TEMPLATES = [
     },
 ]
 
-redis_host = os.environ.get("REDIS_URL", os.environ.get("REDIS_HOST", "redis://localhost:6379"))
+redis_host = os.environ.get(
+    "REDIS_URL", os.environ.get("REDIS_HOST", "redis://localhost:6379")
+)
 if redis_host.startswith("redis://") or redis_host.startswith("rediss://"):
     _redis_hosts = [redis_host]
 else:
