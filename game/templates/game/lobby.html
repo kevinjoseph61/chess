@@ -1,82 +1,141 @@
 {% extends "layout.html" %}
 
 {%block title%}Lobby{% endblock %}
-  
+
 {% block navbar %}
-    <ul class="navbar-nav mr-auto">
-      <li class="nav-item">
-        <a class="nav-link active">Lobby </a>
-      </li>
-      <li class="nav-item">
-        <a class="nav-link" href="/single">Single Player</a>
-		  </li>
-      <li class="nav-item">
-        <a class="nav-link" href="/ongoing">Ongoing Games</a>
-		  </li>
-      <li class="nav-item">
-        <a class="nav-link" href="/completed">Completed Games</a>
-		  </li>
-    </ul>
-    <ul class="navbar-nav ml-auto">
-      <li class="nav-item">
-        <a class="nav-link" href="/accounts/logout">Logout</a>
-      </li>
-      <li class="nav-item">
-      	<a class="nav-link active"><b>Hello, {{ user.username }}</b></a>
-      </li>
-	</ul>
+  <ul class="navbar-nav me-auto">
+    <li class="nav-item"><a class="nav-link active" href="/">Lobby</a></li>
+    <li class="nav-item"><a class="nav-link" href="/single">Single Player</a></li>
+    <li class="nav-item"><a class="nav-link" href="/ongoing">Ongoing</a></li>
+    <li class="nav-item"><a class="nav-link" href="/completed">Completed</a></li>
+  </ul>
+  <ul class="navbar-nav ms-auto">
+    <li class="nav-item"><a class="nav-link" href="/accounts/logout"><i class="bi bi-box-arrow-right me-1"></i>Logout</a></li>
+    <li class="nav-item"><a class="nav-link active"><i class="bi bi-person-fill me-1"></i>{{ user.username }}</a></li>
+  </ul>
+{% endblock %}
+
+{% block extra_css %}
+  .hero-section {
+    background: linear-gradient(135deg, var(--chess-surface) 0%, var(--chess-accent) 100%);
+    border-radius: 16px;
+    padding: 3rem 2rem;
+    margin-bottom: 2rem;
+    border: 1px solid rgba(255,255,255,0.05);
+  }
+  .hero-title {
+    font-size: 2.5rem;
+    font-weight: 800;
+    background: linear-gradient(135deg, #fff, var(--chess-success));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .feature-card {
+    background: var(--chess-surface);
+    border: 1px solid rgba(255,255,255,0.05);
+    border-radius: 12px;
+    padding: 1.5rem;
+    height: 100%;
+    transition: transform 0.2s, border-color 0.2s;
+  }
+  .feature-card:hover {
+    transform: translateY(-4px);
+    border-color: var(--chess-highlight);
+  }
+  .feature-icon {
+    font-size: 2rem;
+    margin-bottom: 0.75rem;
+  }
+  .game-card {
+    background: var(--chess-surface);
+    border: 1px solid rgba(255,255,255,0.05);
+    border-radius: 12px;
+    transition: transform 0.2s, border-color 0.2s;
+    overflow: hidden;
+  }
+  .game-card:hover {
+    transform: translateY(-2px);
+    border-color: var(--chess-success);
+  }
+  .game-card .card-header {
+    background: var(--chess-accent);
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+  }
 {% endblock %}
 
 {% block body %}
-  <div class="jumbotron">
-    <div class="container">
-      <h1 class="display-3">Chess Gang <img class="mb-1" alt="" width="100" height="100" src="/static/chess.png"></h1> 
-      <p>Welcome to Chess Gang! Play real-time multiplayer chess with your friends or just practice on Single Player Mode</p>
-      <p><a class="btn btn-primary btn-lg" href="/create" role="button">Create a Game &raquo;</a></p>
+  <div class="container py-3">
+    <!-- Hero -->
+    <div class="hero-section text-center">
+      <h1 class="hero-title mb-3">
+        <i class="bi bi-cursor-fill me-2" style="-webkit-text-fill-color: var(--chess-highlight);"></i>Chess Gang
+      </h1>
+      <p class="lead mb-4" style="color: var(--chess-muted); max-width: 600px; margin: 0 auto;">
+        Play real-time multiplayer chess with friends or train with our AI coach in Single Player mode
+      </p>
+      <a class="btn btn-primary btn-lg px-4" href="/create">
+        <i class="bi bi-plus-circle me-2"></i>Create a Game
+      </a>
     </div>
-  </div>
 
-  <div class="container">
-    <div class="row">
-     <div class="col-md-4">
-        <h2>Single Player Game</h2>
-        <p>Play with our Chess AI and upskill now!</p>
-        <p><a class="btn btn-secondary" href="/single" role="button">Start &raquo;</a></p>
+    <!-- Feature Cards -->
+    <div class="row g-3 mb-4">
+      <div class="col-md-4">
+        <div class="feature-card">
+          <div class="feature-icon">🤖</div>
+          <h5>Single Player + AI Coach</h5>
+          <p class="text-muted small">Play against our AI with real-time coaching that rates every move</p>
+          <a class="btn btn-outline-light btn-sm" href="/single">Play Now <i class="bi bi-arrow-right"></i></a>
+        </div>
       </div>
       <div class="col-md-4">
-        <h2>View Ongoing Games</h2>
-        <p>View games that you still haven't completed yet</p>
-        <p><a class="btn btn-secondary" href="/ongoing" role="button">View &raquo;</a></p>
+        <div class="feature-card">
+          <div class="feature-icon">⚔️</div>
+          <h5>Ongoing Games</h5>
+          <p class="text-muted small">Resume games that you haven't completed yet</p>
+          <a class="btn btn-outline-light btn-sm" href="/ongoing">View <i class="bi bi-arrow-right"></i></a>
+        </div>
       </div>
       <div class="col-md-4">
-        <h2>View Completed Games</h2>
-        <p>View games that you've completed and track your progress</p>
-        <p><a class="btn btn-secondary" href="/completed" role="button">View &raquo;</a></p>
+        <div class="feature-card">
+          <div class="feature-icon">🏆</div>
+          <h5>Completed Games</h5>
+          <p class="text-muted small">Review your completed games and track progress</p>
+          <a class="btn btn-outline-light btn-sm" href="/completed">View <i class="bi bi-arrow-right"></i></a>
+        </div>
       </div>
-    </div> 
-    <hr>
-  </div>
+    </div>
 
-  <div class="container">
-    <h2>Join a Public Game</h2> <br>
-    <div class="container" class="container align-items-stretch" style="display: flex; flex-direction: row; flex-wrap: wrap; align-items: baseline;">
+    <!-- Public Games -->
+    <h4 class="mb-3"><i class="bi bi-globe me-2"></i>Public Games</h4>
+    <div class="row g-3">
       {% for room in public %}
-        <div class="card border-primary m-1" style="width: 250px">
-          <div class="card-header text-center">
-            <h4 class="my-0 font-weight-normal">{{room.level}}</h4>
-          </div>
-          <div class="card-body">
-            <h6 class="card-text">Username: {{room.owner.username}}</h6>
-            <h6 class="card-text">Play as {{room.side}}</h6>
-            <a type="button" class="btn btn-lg btn-block btn-primary" href="{{room.link}}">Join Game</a>
+        <div class="col-sm-6 col-md-4 col-lg-3">
+          <div class="game-card">
+            <div class="card-header text-center py-2">
+              <span class="badge bg-primary">{{room.level}}</span>
+            </div>
+            <div class="card-body p-3">
+              <p class="mb-1"><i class="bi bi-person me-1"></i>{{room.owner.username}}</p>
+              <p class="mb-2 text-muted small">Play as <strong>{{room.side}}</strong></p>
+              <a class="btn btn-success btn-sm w-100" href="{{room.link}}">
+                <i class="bi bi-play-fill me-1"></i>Join Game
+              </a>
+            </div>
           </div>
         </div>
       {% empty %}
-        <p>There seems to be no public games right now. </p> <a class="btn btn-secondary mx-2" href="/create" role="button">Create &raquo;</a>
+        <div class="col-12">
+          <div class="text-center py-4" style="color: var(--chess-muted);">
+            <i class="bi bi-inbox" style="font-size: 2rem;"></i>
+            <p class="mt-2 mb-3">No public games available right now</p>
+            <a class="btn btn-primary btn-sm" href="/create">
+              <i class="bi bi-plus-circle me-1"></i>Create One
+            </a>
+          </div>
+        </div>
       {% endfor %}
-    </div> 
-    <hr>
+    </div>
   </div>
-  
-
 {% endblock %}

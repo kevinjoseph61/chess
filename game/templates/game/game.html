@@ -1,5 +1,4 @@
 {% extends "layout.html" %}
-<!doctype html>
 
 {%block title%}Multiplayer Chess{% endblock %}
 
@@ -11,302 +10,214 @@
 {% endblock %}
 
 {% block navbar %}
-    <ul class="navbar-nav mr-auto">
-      <li class="nav-item">
-        <a class="nav-link" href="/">Lobby </a>
-      </li>
-      <li class="nav-item">
-        <a class="nav-link" href="/single">Single Player</a>
-		  </li>
-      <li class="nav-item">
-        <a class="nav-link" href="/ongoing">Ongoing Games</a>
-		  </li>
-      <li class="nav-item">
-        <a class="nav-link" href="/completed">Completed Games</a>
-		  </li>
-    </ul>
-    <ul class="navbar-nav ml-auto">
-      <li class="nav-item">
-        <a class="nav-link" href="/accounts/logout">Logout</a>
-      </li>
-      <li class="nav-item">
-      	<a class="nav-link active"><b>Hello, {{ user.username }}</b></a>
-      </li>
-	</ul>
+  <ul class="navbar-nav me-auto">
+    <li class="nav-item"><a class="nav-link" href="/">Lobby</a></li>
+    <li class="nav-item"><a class="nav-link" href="/single">Single Player</a></li>
+    <li class="nav-item"><a class="nav-link" href="/ongoing">Ongoing</a></li>
+    <li class="nav-item"><a class="nav-link" href="/completed">Completed</a></li>
+  </ul>
+  <ul class="navbar-nav ms-auto">
+    <li class="nav-item"><a class="nav-link" href="/accounts/logout"><i class="bi bi-box-arrow-right me-1"></i>Logout</a></li>
+    <li class="nav-item"><a class="nav-link active"><i class="bi bi-person-fill me-1"></i>{{ user.username }}</a></li>
+  </ul>
 {% endblock %}
 
 {% block body %}
-  <div class="modal fade" id="gameModal" tabindex="-1" role="dialog" aria-hidden="true">
-    <div class="modal-dialog">
+  <!-- Game Over Modal -->
+  <div class="modal fade" id="gameModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content">
-        <div class="modal-header">
-          <h4 class="modal-title" id="modal-title">Please wait...</h4>
+        <div class="modal-header border-0">
+          <h5 class="modal-title" id="modal-title">Please wait...</h5>
         </div>
-        <div class="modal-body">
-          <p id="modal-body">Wait for your opponent to connect to the game</p>
-        </div>
-        <div class="modal-footer">
-          <a href="/" class="btn btn-danger">Return to Lobby</a>
+        <div class="modal-body" id="modal-body">Wait for your opponent to connect to the game</div>
+        <div class="modal-footer border-0">
+          <a href="/" class="btn btn-outline-light">Return to Lobby</a>
         </div>
       </div>
     </div>
   </div>
 
-  <div class="modal fade" id="resignModal" tabindex="-1" role="dialog" aria-hidden="true">
-    <div class="modal-dialog">
+  <!-- Resign Modal -->
+  <div class="modal fade" id="resignModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content">
-        <div class="modal-header">
-          <h4 class="modal-title" id="modal-title">Confirm</h4>
-        </div>
-        <div class="modal-body">
-          <p id="modal-body">Are you sure you want to resign this game?</p>
-        </div>
-        <div class="modal-footer">
-          <button class="btn btn-danger" id="yesRes">Yes</button>
-          <button class="btn btn-success" id="noRes">No</button>
+        <div class="modal-header border-0"><h5 class="modal-title">Resign Game?</h5></div>
+        <div class="modal-body">Are you sure you want to resign?</div>
+        <div class="modal-footer border-0">
+          <button class="btn btn-outline-light" id="noRes">Cancel</button>
+          <button class="btn btn-danger" id="yesRes">Resign</button>
         </div>
       </div>
     </div>
   </div>
 
-  <div id="myBoard" style="width: 400px; margin-left: auto; margin-right: auto;" class="p-2"></div>
-  <div style="text-align: center">
-    <button class="btn btn-danger" id="resign">Resign</button> <br>
-    <b>Status:</b><p id="status">Please wait for connection establishment...</p>
-    <b>FEN:</b><p id="fen"></p>
-    <b>PGN:</b><p id="pgn"></p>
+  <div class="container-fluid px-3 px-lg-4 py-3">
+    <div class="row justify-content-center">
+      <div class="col-auto">
+        <div style="border-radius: 12px; overflow: hidden; box-shadow: 0 8px 32px rgba(0,0,0,0.4); border: 2px solid rgba(255,255,255,0.05);">
+          <div id="myBoard" style="width: 420px;"></div>
+        </div>
+        <div class="d-flex align-items-center gap-2 mt-2 px-1" style="background: var(--chess-surface); border-radius: 8px; padding: 8px 16px; border: 1px solid rgba(255,255,255,0.05); font-size: 0.85rem;">
+          <span class="status-dot" id="statusDot" style="width:8px;height:8px;border-radius:50%;background:var(--chess-success);display:inline-block;"></span>
+          <span id="status">Connecting...</span>
+        </div>
+        <div class="mt-2">
+          <button class="btn btn-outline-danger btn-sm" id="resign"><i class="bi bi-flag-fill me-1"></i>Resign</button>
+        </div>
+        <div class="mt-2" style="font-family: monospace; font-size: 0.8rem; color: var(--chess-muted); max-height: 60px; overflow-y: auto; overflow-x: hidden; word-wrap: break-word; overflow-wrap: break-word; max-width: 420px;">
+          <span id="pgn"></span>
+        </div>
+      </div>
+    </div>
   </div>
 
   <script>
   var ws_scheme = window.location.protocol == "https:" ? "wss" : "ws";
   var ws_path = ws_scheme + '://' + window.location.host + "/game/" + {{game_id}};
-  console.log("Connecting to " + ws_path);
   var socket = new ReconnectingWebSocket(ws_path);
   var board = null
   var game = new Chess()
-  var $status = $('#status')
-  var $fen = $('#fen')
-  var $pgn = $('#pgn')
-  var $modalTitle = $('#modal-title')
-  var $modalBody = $('#modal-body')
   var orientation = null
 
-  var whiteSquareGrey = '#a9a9a9'
-  var blackSquareGrey = '#696969'
+  function showModal(title, body) {
+    document.getElementById('modal-title').textContent = title;
+    document.getElementById('modal-body').textContent = body;
+    new bootstrap.Modal(document.getElementById('gameModal'), {
+      keyboard: false, backdrop: 'static'
+    }).show();
+  }
 
+  function hideModal(id) {
+    var el = document.getElementById(id);
+    var m = bootstrap.Modal.getInstance(el);
+    if (m) m.hide();
+  }
 
-  function removeGreySquares () {
+  function removeGreySquares() {
     $('#myBoard .square-55d63').css('background', '')
   }
 
-  function greySquare (square) {
+  function greySquare(square) {
     var $square = $('#myBoard .square-' + square)
-
-    var background = whiteSquareGrey
-    if ($square.hasClass('black-3c85d')) {
-      background = blackSquareGrey
-    }
-
+    var background = '#575769'
+    if ($square.hasClass('black-3c85d')) background = '#44445a'
     $square.css('background', background)
   }
 
-  function onDragStart (source, piece, position, orientation) {
+  function onDragStart(source, piece, position, orientation) {
     if (game.game_over()) return false
     return !((orientation === 'white' && piece.search(/^w/) === -1) || (orientation === 'black' && piece.search(/^b/) === -1));
   }
 
-  function onDrop (source, target) {
-    var move = game.move({
-      from: source,
-      to: target,
-      promotion: 'q'
-    })
+  function onDrop(source, target) {
+    var move = game.move({ from: source, to: target, promotion: 'q' })
     if (move === null) return 'snapback'
     updateStatus()
     socket.send(JSON.stringify({"command": "new-move","source": source,"target": target,"fen": game.fen(), "pgn": game.pgn()}));
   }
 
-  function onSnapEnd () {
-    board.position(game.fen())
-  }
+  function onSnapEnd() { board.position(game.fen()) }
 
-  function onMouseoverSquare (square, piece) {
+  function onMouseoverSquare(square, piece) {
     if (!((orientation === 'white' && game.turn()==='w') || (orientation === 'black' && game.turn()==='b')))
       return
-
-    var moves = game.moves({
-      square: square,
-      verbose: true
-    })
+    var moves = game.moves({ square: square, verbose: true })
     if (moves.length === 0) return
     greySquare(square)
-    for (var i = 0; i < moves.length; i++) {
-      greySquare(moves[i].to)
-    }
+    for (var i = 0; i < moves.length; i++) greySquare(moves[i].to)
   }
 
-  function onMouseoutSquare (square, piece) {
-    removeGreySquares()
-  }
+  function onMouseoutSquare() { removeGreySquares() }
 
-  function onSnapEnd () {
-    board.position(game.fen())
-  }
-
-  function updateStatus () {
+  function updateStatus() {
+    var moveColor = game.turn() === 'b' ? 'Black' : 'White'
     var status = ''
 
-    var moveColor = 'White'
-    if (game.turn() === 'b') {
-      moveColor = 'Black'
-    }
     if (game.in_checkmate()) {
-      status = 'Game over, ' + moveColor + ' is in checkmate.'
-      if(moveColor === 'White')
+      status = moveColor + ' is in checkmate!'
+      if (moveColor === 'White')
         socket.send(JSON.stringify({"command": "game-over","result": "Black wins"}));
       else
         socket.send(JSON.stringify({"command": "game-over","result": "White wins"}));
-      $modalTitle.html("Game Over")
-      $modalBody.html(status)
-      $('#gameModal').modal({
-        keyboard: false,
-        backdrop: 'static'
-      }); 
-    }
-    else if (game.in_draw()) {
-      status = 'Game over, drawn position'
+      showModal('Game Over', status);
+    } else if (game.in_draw()) {
+      status = 'Game drawn'
       socket.send(JSON.stringify({"command": "game-over","result": "Game ended in drawn position"}));
-      $modalTitle.html("Game Over")
-      $modalBody.html(status)
-      $('#gameModal').modal({
-        keyboard: false,
-        backdrop: 'static'
-      });
-    }
-    else if (game.in_stalemate()) {
-      status = 'Game over, stalemate'
+      showModal('Game Over', status);
+    } else if (game.in_stalemate()) {
+      status = 'Stalemate!'
       socket.send(JSON.stringify({"command": "game-over","result": "Game ended in stalemate"}));
-      $modalTitle.html("Game Over")
-      $modalBody.html(status)
-      $('#gameModal').modal({
-        keyboard: false,
-        backdrop: 'static'
-      });
-    }
-    else {
+      showModal('Game Over', status);
+    } else {
       status = moveColor + ' to move'
-      if (game.in_check()) {
-        status += ', ' + moveColor + ' is in check'
-      }
+      if (game.in_check()) status += ' (check!)'
     }
 
-    $status.html(status)
-    $fen.html(game.fen())
-    $pgn.html(game.pgn())
+    document.getElementById('status').textContent = status;
+    document.getElementById('pgn').textContent = game.pgn();
   }
 
   updateStatus()
 
-  socket.onclose = function () {
-    $modalTitle.html("Connection closed")
-    $modalBody.html("Connection closed unexpectedly please wait while we try to reconnect...")
-    $('#gameModal').modal({
-      keyboard: false,
-      backdrop: 'static'
-    });
+  socket.onclose = function() {
+    showModal('Connection Lost', 'Connection closed unexpectedly. Attempting to reconnect...');
   }
 
-  socket.onopen = function () {
-    $('#gameModal').modal('hide');
-    $('#gameModal').data('bs.modal',null);
+  socket.onopen = function() {
+    hideModal('gameModal');
   }
 
-  socket.onmessage = function (message) {
-    console.log("Got websocket message " + message.data);
+  socket.onmessage = function(message) {
     var data = JSON.parse(message.data);
-    if (data.command=="join") {
-      console.log("joining room as "+data.orientation)
+    if (data.command === "join") {
       var config = {
-      draggable: true,
-      position: 'start',
-      onDragStart: onDragStart,
-      onDrop: onDrop,
-      onSnapEnd: onSnapEnd,
-      onMouseoutSquare: onMouseoutSquare,
-      onMouseoverSquare: onMouseoverSquare,
-      pieceTheme: '/static/chessboard/{piece}.png',
-      orientation: data.orientation
+        draggable: true,
+        position: 'start',
+        onDragStart: onDragStart,
+        onDrop: onDrop,
+        onSnapEnd: onSnapEnd,
+        onMouseoutSquare: onMouseoutSquare,
+        onMouseoverSquare: onMouseoverSquare,
+        pieceTheme: '/static/chessboard/{piece}.png',
+        orientation: data.orientation
       }
       board = Chessboard('myBoard', config)
-      orientation=data.orientation;
-      if(data.pgn){
-        game.load_pgn(data.pgn)
-      }
+      orientation = data.orientation;
+      if (data.pgn) game.load_pgn(data.pgn)
       board.position(game.fen());
       updateStatus();
-      if(data.opp_online!=true) {
-        $modalTitle.html("Please Wait...")
-        $modalBody.html("Please wait for your opponent to connect to this game")
-        $('#gameModal').modal({
-          keyboard: false,
-          backdrop: 'static'
-        });
+      if (!data.opp_online) {
+        showModal('Waiting...', 'Please wait for your opponent to connect');
       }
     }
-    else if(data.command=="opponent-online"){
-      $('#gameModal').modal('hide');
-      $('#gameModal').data('bs.modal',null);
+    else if (data.command === "opponent-online") { hideModal('gameModal'); }
+    else if (data.command === "opponent-offline") {
+      showModal('Opponent Disconnected', 'Your opponent disconnected. Waiting for them to reconnect...');
     }
-    else if(data.command=="opponent-offline"){
-      $modalTitle.html("Please Wait...")
-      $modalBody.html("Your opponent suddenly disconnected. Please wait for your opponent to connect to this game")
-      $('#gameModal').modal({
-        keyboard: false,
-        backdrop: 'static'
-      });
-    }
-    else if(data.command=="new-move") {
-      game.move({
-          from: data.source,
-          to: data.target,
-          promotion: 'q'
-        });
+    else if (data.command === "new-move") {
+      game.move({ from: data.source, to: data.target, promotion: 'q' });
       board.position(game.fen());
-      updateStatus()
+      updateStatus();
     }
-    else if(data.command=="opponent-resigned") {
-      $modalTitle.html("Game over")
-      $modalBody.html("Your opponent has resigned from the game. You win!")
-      $('#gameModal').modal({
-        keyboard: false,
-        backdrop: 'static'
-      });
+    else if (data.command === "opponent-resigned") {
+      showModal('Game Over', 'Your opponent resigned. You win!');
     }
   }
 
-  $(document).on('click','#resign', function(){
-    $('#resignModal').modal({
-      keyboard: false,
-      backdrop: 'static'
-    });
+  $(document).on('click', '#resign', function() {
+    new bootstrap.Modal(document.getElementById('resignModal'), {
+      keyboard: false, backdrop: 'static'
+    }).show();
   })
-  $(document).on('click','#noRes', function(){
-    $('#resignModal').modal('hide');
-    $('#resignModal').data('bs.modal',null);
-  })
-  $(document).on('click','#yesRes', function(){
-    if(orientation === 'white')
+  $(document).on('click', '#noRes', function() { hideModal('resignModal'); })
+  $(document).on('click', '#yesRes', function() {
+    if (orientation === 'white')
       socket.send(JSON.stringify({"command": "resign","result": "Black wins"}));
     else
       socket.send(JSON.stringify({"command": "resign","result": "White wins"}));
-    $('#resignModal').modal('hide');
-    $('#resignModal').data('bs.modal',null);
-    $modalTitle.html("Game over")
-    $modalBody.html("You have resigned from the game. You lose!")
-    $('#gameModal').modal({
-      keyboard: false,
-      backdrop: 'static'
-    });
+    hideModal('resignModal');
+    showModal('Game Over', 'You resigned. You lose!');
   })
 
   </script>

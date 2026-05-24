@@ -1,48 +1,43 @@
 {% extends "layout.html" %}
 
 {%block title%}Completed Games{% endblock %}
-  
+
 {% block navbar %}
-    <ul class="navbar-nav mr-auto">
-      <li class="nav-item">
-        <a class="nav-link" href="/">Lobby </a>
-      </li>
-      <li class="nav-item">
-        <a class="nav-link" href="/single">Single Player</a>
-	    </li>
-      <li class="nav-item">
-        <a class="nav-link" href="/ongoing">Ongoing Games</a>
-		  </li>
-      <li class="nav-item">
-        <a class="nav-link active">Completed Games</a>
-		  </li>
-    </ul>
-    <ul class="navbar-nav ml-auto">
-      <li class="nav-item">
-        <a class="nav-link" href="/accounts/logout">Logout</a>
-      </li>
-      <li class="nav-item">
-      	<a class="nav-link active"><b>Hello, {{ user.username }}</b></a>
-      </li>
-	</ul>
+  <ul class="navbar-nav me-auto">
+    <li class="nav-item"><a class="nav-link" href="/">Lobby</a></li>
+    <li class="nav-item"><a class="nav-link" href="/single">Single Player</a></li>
+    <li class="nav-item"><a class="nav-link" href="/ongoing">Ongoing</a></li>
+    <li class="nav-item"><a class="nav-link active" href="/completed">Completed</a></li>
+  </ul>
+  <ul class="navbar-nav ms-auto">
+    <li class="nav-item"><a class="nav-link" href="/accounts/logout"><i class="bi bi-box-arrow-right me-1"></i>Logout</a></li>
+    <li class="nav-item"><a class="nav-link active"><i class="bi bi-person-fill me-1"></i>{{ user.username }}</a></li>
+  </ul>
 {% endblock %}
 
 {% block body %}
-  <div class="container mt-4">
-    <h2>Your Completed Games</h2> <br>
-    <div class="container" class="container align-items-stretch" style="display: flex; flex-direction: row; flex-wrap: wrap; align-items: baseline;">
+  <div class="container py-4">
+    <h4 class="mb-3"><i class="bi bi-trophy me-2" style="color: var(--chess-warning);"></i>Completed Games</h4>
+    <div class="row g-3">
       {% for room in completed %}
-        <div class="card border-primary m-1" style="width: 250px">
-          <div class="card-body">
-            <h6 class="card-text">Against: {{room.opponent.username}}</h6>
-            <h6 class="card-text">You Played as {{room.side | title}}</h6>
-            <h6 class="card-text">Result: {{room.result | title}}</h6>
+        <div class="col-sm-6 col-md-4 col-lg-3">
+          <div class="card">
+            <div class="card-body p-3">
+              <p class="mb-1"><i class="bi bi-person me-1"></i>vs {{room.opponent.username}}</p>
+              <p class="mb-1 text-muted small">Played as <strong>{{room.side|title}}</strong></p>
+              <p class="mb-0"><span class="badge {% if room.result == 'win' %}bg-success{% elif room.result == 'loss' %}bg-danger{% else %}bg-secondary{% endif %}">{{room.result|title}}</span></p>
+            </div>
           </div>
         </div>
       {% empty %}
-        <p>You have not Completed any Games! </p> <a class="btn btn-secondary mx-2" href="/create" role="button">Create &raquo;</a>
+        <div class="col-12">
+          <div class="text-center py-4" style="color: var(--chess-muted);">
+            <i class="bi bi-inbox" style="font-size: 2rem;"></i>
+            <p class="mt-2 mb-3">No completed games yet</p>
+            <a class="btn btn-primary btn-sm" href="/create"><i class="bi bi-plus-circle me-1"></i>Start a Game</a>
+          </div>
+        </div>
       {% endfor %}
-    </div> 
+    </div>
   </div>
-
 {% endblock %}

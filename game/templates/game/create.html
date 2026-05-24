@@ -1,66 +1,76 @@
 {% extends "layout.html" %}
 
 {%block title%}Create Game{% endblock %}
-  
+
 {% block navbar %}
-    <ul class="navbar-nav mr-auto">
-      <li class="nav-item">
-        <a class="nav-link" href="/">Lobby </a>
-      </li>
-      <li class="nav-item">
-        <a class="nav-link" href="/single">Single Player</a>
-	    </li>
-      <li class="nav-item">
-        <a class="nav-link" href="/ongoing">Ongoing Games</a>
-		  </li>
-      <li class="nav-item">
-        <a class="nav-link" href="/completed">Completed Games</a>
-		  </li>
-    </ul>
-    <ul class="navbar-nav ml-auto">
-      <li class="nav-item">
-        <a class="nav-link" href="/accounts/logout">Logout</a>
-      </li>
-      <li class="nav-item">
-      	<a class="nav-link active"><b>Hello, {{ user.username }}</b></a>
-      </li>
-	</ul>
+  <ul class="navbar-nav me-auto">
+    <li class="nav-item"><a class="nav-link" href="/">Lobby</a></li>
+    <li class="nav-item"><a class="nav-link" href="/single">Single Player</a></li>
+    <li class="nav-item"><a class="nav-link" href="/ongoing">Ongoing</a></li>
+    <li class="nav-item"><a class="nav-link" href="/completed">Completed</a></li>
+  </ul>
+  <ul class="navbar-nav ms-auto">
+    <li class="nav-item"><a class="nav-link" href="/accounts/logout"><i class="bi bi-box-arrow-right me-1"></i>Logout</a></li>
+    <li class="nav-item"><a class="nav-link active"><i class="bi bi-person-fill me-1"></i>{{ user.username }}</a></li>
+  </ul>
+{% endblock %}
+
+{% block extra_css %}
+  .create-card {
+    background: var(--chess-surface);
+    border: 1px solid rgba(255,255,255,0.05);
+    border-radius: 16px;
+    padding: 2rem;
+    max-width: 500px;
+    margin: 0 auto;
+  }
+  .form-select, .form-control {
+    background: var(--chess-accent);
+    border: 1px solid rgba(255,255,255,0.1);
+    color: var(--chess-text);
+    border-radius: 8px;
+  }
+  .form-select:focus, .form-control:focus {
+    background: var(--chess-accent);
+    border-color: var(--chess-highlight);
+    color: var(--chess-text);
+    box-shadow: 0 0 0 0.2rem rgba(233,69,96,0.25);
+  }
 {% endblock %}
 
 {% block body %}
-  <div class="container mt-5 offset-2 col-8">
-      <div>
-        <form class="" action="{% url 'create' %}" method="POST">
-          {% csrf_token %} 
-          <div class="row">
-            <div class="col-12 p-2">
-              <label for="username" class="form-label">Opponent Username (leave blank to display game on lobby) </label>
-              <div class="input-group">
-                <span class="input-group-text">@</span>
-                <input type="text" class="form-control" id="username" name="username" placeholder="Username">
-              </div>
-            </div>
-            <div class="col-12 p-2">
-              <label for="side" class="form-label">Side</label>
-              <select class="custom-select" id="side" name="side" required>
-                <option value="white">White</option>
-                <option value="black">Black</option>
-              </select>
-            </div>
-            <div class="col-12 p-2">
-              <label for="level" class="form-label">Level (only needed for public room)</label>
-              <select class="custom-select" id="level" name="level" required>
-                <option value="undef">Choose...</option>
-                <option value="Beginner">Beginner</option>
-                <option value="Intermediate">Intermediate</option>
-                <option value="Advanced">Advanced</option>
-              </select>
-            </div>
-            <button class="btn btn-primary m-3" type="submit">Create Game</button>
+  <div class="container py-4">
+    <div class="create-card">
+      <h4 class="mb-4"><i class="bi bi-plus-circle me-2" style="color: var(--chess-highlight);"></i>Create a Game</h4>
+      <form action="{% url 'create' %}" method="POST">
+        {% csrf_token %}
+        <div class="mb-3">
+          <label for="username" class="form-label">Opponent Username <span class="text-muted small">(leave blank for public game)</span></label>
+          <div class="input-group">
+            <span class="input-group-text" style="background: var(--chess-accent); border-color: rgba(255,255,255,0.1); color: var(--chess-muted);">@</span>
+            <input type="text" class="form-control" id="username" name="username" placeholder="Username">
           </div>
-        </form>
-      </div>
+        </div>
+        <div class="mb-3">
+          <label for="side" class="form-label">Play as</label>
+          <select class="form-select" id="side" name="side" required>
+            <option value="white">White</option>
+            <option value="black">Black</option>
+          </select>
+        </div>
+        <div class="mb-4">
+          <label for="level" class="form-label">Level <span class="text-muted small">(for public rooms)</span></label>
+          <select class="form-select" id="level" name="level" required>
+            <option value="undef">Choose...</option>
+            <option value="Beginner">Beginner</option>
+            <option value="Intermediate">Intermediate</option>
+            <option value="Advanced">Advanced</option>
+          </select>
+        </div>
+        <button class="btn btn-primary w-100" type="submit">
+          <i class="bi bi-play-fill me-1"></i>Create Game
+        </button>
+      </form>
     </div>
-</div>
-
+  </div>
 {% endblock %}

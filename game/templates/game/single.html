@@ -1,258 +1,614 @@
 {% extends "layout.html" %}
-<!doctype html>
 
 {%block title%}Single Player Chess{% endblock %}
 
 {% block cdn %}
   <link rel="stylesheet" href="https://unpkg.com/@chrisoakman/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.css" integrity="sha384-q94+BZtLrkL1/ohfjR8c6L+A6qzNH9R2hBLwyoAfu3i/WCvQjzL2RQJ3uNHDISdU" crossorigin="anonymous">
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/reconnecting-websocket/1.0.0/reconnecting-websocket.min.js" integrity="sha512-B4skI5FiLurS86aioJx9VfozI1wjqrn6aTdJH+YQUmCZum/ZibPBTX55k5d9XM6EsKePDInkLVrN7vPmJxc1qA==" crossorigin="anonymous"></script>
   <script src="https://unpkg.com/@chrisoakman/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.js" integrity="sha384-8Vi8VHwn3vjQ9eUHUxex3JSN/NFqUg3QbPyX8kWyb93+8AC/pPWTzj+nHtbC5bxD" crossorigin="anonymous"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.2/chess.js" integrity="sha384-s3XgLpvmHyscVpijnseAmye819Ee3yaGa8NxstkJVyA6nuDFjt59u1QvuEl/mecz" crossorigin="anonymous"></script>
 {% endblock %}
 
 {% block navbar %}
-    <ul class="navbar-nav mr-auto">
-      <li class="nav-item">
-        <a class="nav-link" href="/">Lobby </a>
-      </li>
-      <li class="nav-item">
-        <a class="nav-link active">Single Player</a>
-		  </li>
-      <li class="nav-item">
-        <a class="nav-link" href="/ongoing">Ongoing Games</a>
-		  </li>
-      <li class="nav-item">
-        <a class="nav-link" href="/completed">Completed Games</a>
-		  </li>
-    </ul>
-    <ul class="navbar-nav ml-auto">
-      <li class="nav-item">
-        <a class="nav-link" href="/accounts/logout">Logout</a>
-      </li>
-      <li class="nav-item">
-      	<a class="nav-link active"><b>Hello, {{ user.username }}</b></a>
-      </li>
-	</ul>
+  <ul class="navbar-nav me-auto">
+    <li class="nav-item"><a class="nav-link" href="/">Lobby</a></li>
+    <li class="nav-item"><a class="nav-link active" href="/single">Single Player</a></li>
+    <li class="nav-item"><a class="nav-link" href="/ongoing">Ongoing</a></li>
+    <li class="nav-item"><a class="nav-link" href="/completed">Completed</a></li>
+  </ul>
+  <ul class="navbar-nav ms-auto">
+    <li class="nav-item"><a class="nav-link" href="/accounts/logout"><i class="bi bi-box-arrow-right me-1"></i>Logout</a></li>
+    <li class="nav-item"><a class="nav-link active"><i class="bi bi-person-fill me-1"></i>{{ user.username }}</a></li>
+  </ul>
+{% endblock %}
+
+{% block extra_css %}
+  /* Board styling overrides for dark theme */
+  .board-container {
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+    border: 2px solid rgba(255,255,255,0.05);
+  }
+
+  /* Coaching panel */
+  .coaching-panel {
+    background: var(--chess-surface);
+    border-radius: 12px;
+    border: 1px solid rgba(255,255,255,0.05);
+    display: flex;
+    flex-direction: column;
+    height: 520px;
+  }
+  .coaching-header {
+    padding: 12px 16px;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .coaching-messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .coaching-messages::-webkit-scrollbar {
+    width: 4px;
+  }
+  .coaching-messages::-webkit-scrollbar-thumb {
+    background: var(--chess-accent);
+    border-radius: 4px;
+  }
+
+  /* Move evaluation bubbles */
+  .coach-msg {
+    padding: 10px 14px;
+    border-radius: 12px;
+    font-size: 0.9rem;
+    line-height: 1.4;
+    animation: slideIn 0.3s ease;
+    max-width: 100%;
+  }
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .coach-msg.system {
+    background: var(--chess-accent);
+    color: var(--chess-muted);
+    text-align: center;
+    font-size: 0.8rem;
+  }
+  .coach-msg.brilliant {
+    background: linear-gradient(135deg, #1a6b4a, #0d4a33);
+    border-left: 3px solid #26d97f;
+  }
+  .coach-msg.good {
+    background: rgba(78, 204, 163, 0.1);
+    border-left: 3px solid var(--chess-success);
+  }
+  .coach-msg.ok {
+    background: rgba(255,255,255,0.03);
+    border-left: 3px solid var(--chess-muted);
+  }
+  .coach-msg.inaccuracy {
+    background: rgba(245, 166, 35, 0.1);
+    border-left: 3px solid var(--chess-warning);
+  }
+  .coach-msg.mistake {
+    background: rgba(233, 69, 96, 0.1);
+    border-left: 3px solid var(--chess-highlight);
+  }
+  .coach-msg.blunder {
+    background: rgba(233, 69, 96, 0.2);
+    border-left: 3px solid #ff0033;
+  }
+  .eval-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    margin-bottom: 4px;
+  }
+  .eval-badge.brilliant { background: #26d97f; color: #000; }
+  .eval-badge.good { background: var(--chess-success); color: #000; }
+  .eval-badge.ok { background: var(--chess-muted); color: #000; }
+  .eval-badge.inaccuracy { background: var(--chess-warning); color: #000; }
+  .eval-badge.mistake { background: var(--chess-highlight); color: #fff; }
+  .eval-badge.blunder { background: #ff0033; color: #fff; }
+
+  /* Eval bar */
+  .eval-bar-container {
+    width: 24px;
+    height: 100%;
+    background: #333;
+    border-radius: 4px;
+    overflow: hidden;
+    position: relative;
+    min-height: 400px;
+  }
+  .eval-bar-fill {
+    position: absolute;
+    bottom: 0;
+    width: 100%;
+    background: #fff;
+    transition: height 0.5s ease;
+  }
+  .eval-bar-label {
+    position: absolute;
+    width: 100%;
+    text-align: center;
+    font-size: 0.65rem;
+    font-weight: 700;
+    z-index: 1;
+  }
+  .eval-bar-label.top { top: 4px; color: #fff; }
+  .eval-bar-label.bottom { bottom: 4px; color: #333; }
+
+  /* Controls */
+  .game-controls {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  .game-controls .btn {
+    border-radius: 8px;
+    font-size: 0.85rem;
+    padding: 6px 16px;
+  }
+  .level-select {
+    background: var(--chess-accent);
+    color: var(--chess-text);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 8px;
+    padding: 6px 12px;
+    font-size: 0.85rem;
+  }
+
+  /* Status bar */
+  .status-bar {
+    background: var(--chess-surface);
+    border-radius: 8px;
+    padding: 8px 16px;
+    font-size: 0.85rem;
+    border: 1px solid rgba(255,255,255,0.05);
+  }
+  .status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    display: inline-block;
+  }
+  .status-dot.connected { background: var(--chess-success); }
+  .status-dot.thinking { background: var(--chess-warning); animation: pulse 1s infinite; }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+
+  /* Move list */
+  .move-list {
+    font-family: 'Courier New', monospace;
+    font-size: 0.8rem;
+    color: var(--chess-muted);
+    max-height: 60px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    max-width: 420px;
+  }
+
+  /* Modal styling */
+  .modal-content {
+    background: var(--chess-surface);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 12px;
+  }
+
+  /* Analysis panel */
+  .analysis-content {
+    max-height: 60vh;
+    overflow-y: auto;
+    line-height: 1.6;
+  }
+  .analysis-content h2 {
+    font-size: 1.1rem;
+    color: var(--chess-success);
+    margin-top: 16px;
+    margin-bottom: 8px;
+  }
+  .analysis-content h2:first-child { margin-top: 0; }
+  .analysis-content ul, .analysis-content ol {
+    padding-left: 1.2rem;
+  }
+  .analysis-content li {
+    margin-bottom: 4px;
+  }
+  .analysis-spinner {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    padding: 32px;
+    color: var(--chess-muted);
+  }
 {% endblock %}
 
 {% block body %}
-  <div class="modal fade" id="gameModal" tabindex="-1" role="dialog" aria-hidden="true">
-    <div class="modal-dialog">
+  <!-- Game Over Modal -->
+  <div class="modal fade" id="gameModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content">
-        <div class="modal-header">
-          <h4 class="modal-title" id="modal-title">Please wait...</h4>
+        <div class="modal-header border-0">
+          <h5 class="modal-title" id="modal-title">Please wait...</h5>
         </div>
-        <div class="modal-body">
-          <p id="modal-body">Wait for the AI to connect to the game</p>
-        </div>
-        <div class="modal-footer">
-          <a href="/" class="btn btn-danger">Return to Lobby</a>
+        <div class="modal-body" id="modal-body">Wait for the AI to connect to the game</div>
+        <div class="modal-footer border-0">
+          <button class="btn btn-success" id="analyzeBtn" style="display:none;" onclick="requestAnalysis()">
+            <i class="bi bi-lightbulb-fill me-1"></i>Analyze Game
+          </button>
+          <a href="/" class="btn btn-outline-light">Return to Lobby</a>
         </div>
       </div>
     </div>
   </div>
 
-  <div class="modal fade" id="resignModal" tabindex="-1" role="dialog" aria-hidden="true">
-    <div class="modal-dialog">
+  <!-- Analysis Modal -->
+  <div class="modal fade" id="analysisModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
       <div class="modal-content">
-        <div class="modal-header">
-          <h4 class="modal-title" id="modal-title">Confirm</h4>
+        <div class="modal-header border-0">
+          <h5 class="modal-title"><i class="bi bi-mortarboard-fill me-2" style="color: var(--chess-success);"></i>AI Coach Analysis</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
         <div class="modal-body">
-          <p id="modal-body">Are you sure you want to resign this game?</p>
+          <div id="analysisContent" class="analysis-content">
+            <div class="analysis-spinner">
+              <div class="spinner-border text-success" role="status"></div>
+              <span>Analyzing your game with AI...</span>
+            </div>
+          </div>
         </div>
-        <div class="modal-footer">
-          <button class="btn btn-danger" id="yesRes">Yes</button>
-          <button class="btn btn-success" id="noRes">No</button>
+        <div class="modal-footer border-0">
+          <button type="button" class="btn btn-outline-light" data-bs-dismiss="modal">Close</button>
         </div>
       </div>
     </div>
   </div>
 
-  <div class="modal fade" id="flipModal" tabindex="-1" role="dialog" aria-hidden="true">
-    <div class="modal-dialog">
+  <!-- Resign Modal -->
+  <div class="modal fade" id="resignModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content">
-        <div class="modal-header">
-          <h4 class="modal-title" id="modal-title">Confirm</h4>
-        </div>
-        <div class="modal-body">
-          <p id="modal-body">Are you sure you want to flip the board? Flip if only you are stuck!</p>
-        </div>
-        <div class="modal-footer">
-          <button class="btn btn-danger" id="yesFlip">Yes</button>
-          <button class="btn btn-success" id="noFlip">No</button>
+        <div class="modal-header border-0"><h5 class="modal-title">Resign Game?</h5></div>
+        <div class="modal-body">Are you sure you want to resign?</div>
+        <div class="modal-footer border-0">
+          <button class="btn btn-outline-light" id="noRes">Cancel</button>
+          <button class="btn btn-danger" id="yesRes">Resign</button>
         </div>
       </div>
     </div>
   </div>
-  <div class="alert alert-danger mx-2" style="text-align: center; display:none;" id="AI">Please wait for the AI to make a move <img src="/static/loading.gif" style="width:30px"></div>
-  <div id="myBoard" style="width: 400px; margin-left: auto; margin-right: auto;" class="p-2"></div>
-  <div style="text-align: center">
-    <button class="btn btn-danger m-1" id="resign">Resign</button> <button class="btn btn-success m-1" id="flip">Flip</button> <button class="btn btn-info m-1" id="undo">Undo</button>
-    AI level: 
-    <select class="custom-select" id="level" style="width:150px" onchange="AIchange(this)">
-      <option value="3">Advanced</option>
-      <option value="2">Intermediate</option>
-      <option value="1">Beginner</option>
-    </select> <br>
-    <b>Status:</b><p id="status">Please wait for connection establishment...</p>
-    <b>FEN:</b><p id="fen"></p>
-    <b>PGN:</b><p id="pgn"></p>
+
+  <!-- Flip Modal -->
+  <div class="modal fade" id="flipModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header border-0"><h5 class="modal-title">Flip Board?</h5></div>
+        <div class="modal-body">This will flip the board and let the AI make the next move. Use only if stuck!</div>
+        <div class="modal-footer border-0">
+          <button class="btn btn-outline-light" id="noFlip">Cancel</button>
+          <button class="btn btn-warning" id="yesFlip">Flip</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="container-fluid px-3 px-lg-4 py-3">
+    <div class="d-flex flex-wrap justify-content-center align-items-start gap-3">
+
+      <!-- Eval Bar -->
+      <div class="d-none d-md-block" style="flex-shrink: 0;">
+        <div class="eval-bar-container">
+          <div class="eval-bar-label top" id="evalBlack">0.0</div>
+          <div class="eval-bar-fill" id="evalFill" style="height: 50%;"></div>
+          <div class="eval-bar-label bottom" id="evalWhite">0.0</div>
+        </div>
+      </div>
+
+      <!-- Board + Controls -->
+      <div style="flex-shrink: 0;">
+        <div class="board-container">
+          <div id="myBoard" style="width: 420px;"></div>
+        </div>
+        <div class="status-bar mt-2 d-flex align-items-center gap-2">
+          <span class="status-dot connected" id="statusDot"></span>
+          <span id="status">Connecting...</span>
+          <span class="ms-auto" id="moveCount"></span>
+        </div>
+        <div class="game-controls mt-2">
+          <button class="btn btn-outline-danger" id="resign"><i class="bi bi-flag-fill me-1"></i>Resign</button>
+          <button class="btn btn-outline-light" id="flip"><i class="bi bi-arrow-repeat me-1"></i>Flip</button>
+          <button class="btn btn-outline-info" id="undo"><i class="bi bi-arrow-counterclockwise me-1"></i>Undo</button>
+          <select class="level-select" id="level" onchange="AIchange(this)">
+            <option value="3">Advanced</option>
+            <option value="2">Intermediate</option>
+            <option value="1" selected>Beginner</option>
+          </select>
+        </div>
+        <div class="move-list mt-2" id="pgn"></div>
+      </div>
+
+      <!-- Coaching Panel -->
+      <div style="width: 320px; flex-shrink: 0;">
+        <div class="coaching-panel">
+          <div class="coaching-header">
+            <i class="bi bi-mortarboard-fill" style="color: var(--chess-success);"></i>
+            AI Coach
+            <span class="ms-auto badge bg-secondary" id="coachScore">Score: 0</span>
+          </div>
+          <div class="coaching-messages" id="coachMessages">
+            <div class="coach-msg system">
+              <i class="bi bi-lightbulb me-1"></i>
+              Make your first move! The coach will evaluate each move in real-time.
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
   </div>
 
   <script>
-  var ws_scheme = window.location.protocol == "https:" ? "wss" : "ws";
-  var ws_path = ws_scheme + '://' + window.location.host + "/single/";
-  console.log("Connecting to " + ws_path);
-  var socket = new ReconnectingWebSocket(ws_path);
-  var board = null
-  var game = new Chess()
-  var $status = $('#status')
-  var $fen = $('#fen')
-  var $pgn = $('#pgn')
-  var $modalTitle = $('#modal-title')
-  var $modalBody = $('#modal-body')
-  var orientation = null
-  var level = 3
+  // ---- Browser-based AI engine (Web Worker + ONNX Runtime) ----
+  var engine = new Worker('/static/engine/engine-worker.js');
+  var engineReady = false;
+  var board = null;
+  var game = new Chess();
+  var orientation = 'white';
+  var level = 1;
+  var moveNum = 0;
+  var playerScore = 0;
+  var prevEval = 0;
 
-  var whiteSquareGrey = '#a9a9a9'
-  var blackSquareGrey = '#696969'
+  // ---- Stockfish evaluator for accurate move classification ----
+  var sfReady = false;
+  var sfEvalBefore = null; // Stockfish eval BEFORE player's move
+  var sfOutputBuffer = [];
+  // Queue: 'baseline' or 'postmove'. Results are processed in order.
+  var sfEvalQueue = [];
+  var sfPendingPGN = null; // PGN captured at time of player's move
 
+  // Load Stockfish.js directly as a web worker from CDN
+  var sfWorker = new Worker('/static/engine/stockfish.js');
 
-  function removeGreySquares () {
-    $('#myBoard .square-55d63').css('background', '')
-  }
+  sfWorker.onmessage = function(e) {
+    var line = typeof e.data === 'string' ? e.data : String(e.data);
 
-  function greySquare (square) {
-    var $square = $('#myBoard .square-' + square)
-
-    var background = whiteSquareGrey
-    if ($square.hasClass('black-3c85d')) {
-      background = blackSquareGrey
+    if (line === 'readyok') {
+      sfReady = true;
+      console.log('Stockfish evaluator ready');
+      // Evaluate starting position
+      sfWorker.postMessage('ucinewgame');
+      sfWorker.postMessage('position startpos');
+      sfEvalQueue.push('baseline');
+      sfWorker.postMessage('go depth 12');
+      return;
     }
 
-    $square.css('background', background)
-  }
+    if (line.indexOf('bestmove') === 0) {
+      // Search complete - extract the last score from buffer
+      var lastScore = null;
+      var isMate = false;
+      for (var i = sfOutputBuffer.length - 1; i >= 0; i--) {
+        var infoLine = sfOutputBuffer[i];
+        if (infoLine.indexOf('info depth') === 0 && infoLine.indexOf(' score ') !== -1) {
+          var scoreMatch = infoLine.match(/score (cp|mate) (-?\d+)/);
+          if (scoreMatch) {
+            if (scoreMatch[1] === 'cp') {
+              lastScore = parseInt(scoreMatch[2]) / 100.0;
+            } else {
+              var mateIn = parseInt(scoreMatch[2]);
+              lastScore = mateIn > 0 ? 100 : -100;
+              isMate = true;
+            }
+          }
+          break;
+        }
+      }
+      sfOutputBuffer = [];
 
-  function onDragStart (source, piece, position, orientation) {
-    if (game.game_over()) return false
-    return !((orientation === 'white' && piece.search(/^w/) === -1) || (orientation === 'black' && piece.search(/^b/) === -1));
-  }
+      var evalType = sfEvalQueue.shift();
+      if (evalType === 'postmove') {
+        // This is the eval AFTER the player's move
+        var evalAfter = lastScore;
+        if (sfEvalBefore !== null && evalAfter !== null) {
+          var playerEvalBefore = sfEvalBefore;
+          var playerEvalAfter = -evalAfter; // Negate: now it's opponent's turn
+          var cpLoss = playerEvalBefore - playerEvalAfter;
 
-  function onDrop (source, target) {
-    var move = game.move({
-      from: source,
-      to: target,
-      promotion: 'q'
-    })
-    if (move === null) return 'snapback'
-    updateStatus()
-    socket.send(JSON.stringify({"command": "new-move", "pgn": game.pgn(), "level":level}));
-    $("#AI").show(500);
-    $("#flip").prop('disabled',true);
-    $("#undo").prop('disabled',true);
-  }
+          // Clamp cpLoss for mate scores — don't show absurd centipawn values
+          if (isMate || Math.abs(playerEvalBefore) >= 50 || Math.abs(playerEvalAfter) >= 50) {
+            if (cpLoss <= 0) {
+              cpLoss = -1.5; // Brilliant — found a mate
+            } else if (cpLoss > 10) {
+              cpLoss = 5.0; // Blunder — missed/allowed mate
+            }
+          }
 
-  function onSnapEnd () {
-    board.position(game.fen())
-  }
-
-  function onMouseoverSquare (square, piece) {
-    if (!((orientation === 'white' && game.turn()==='w') || (orientation === 'black' && game.turn()==='b')))
-      return
-
-    var moves = game.moves({
-      square: square,
-      verbose: true
-    })
-    if (moves.length === 0) return
-    greySquare(square)
-    for (var i = 0; i < moves.length; i++) {
-      greySquare(moves[i].to)
+          // Clamp eval display to reasonable range
+          var displayEval = Math.max(-15, Math.min(15, playerEvalAfter));
+          var coaching = classifyMoveByCPLoss(cpLoss, displayEval);
+          addCoachMessage(coaching.category, coaching.badge, coaching.message);
+          playerScore += coaching.scoreDelta;
+          document.getElementById('coachScore').textContent = 'Score: ' + playerScore;
+          updateEvalBar(displayEval);
+          requestLiveCoaching(coaching.category, sfPendingPGN || game.pgn());
+        }
+      } else {
+        // Pre-move eval (baseline) — from side to move's perspective
+        sfEvalBefore = lastScore;
+      }
+      return;
     }
-  }
 
-  function onMouseoutSquare (square, piece) {
-    removeGreySquares()
-  }
+    if (line.indexOf('info ') === 0) {
+      sfOutputBuffer.push(line);
+    }
+  };
 
-  function onSnapEnd () {
-    board.position(game.fen())
-  }
+  // Initialize Stockfish
+  sfWorker.postMessage('uci');
+  sfWorker.postMessage('setoption name Hash value 16');
+  sfWorker.postMessage('isready');
 
-  function updateStatus () {
-    var status = ''
+  // Initialize engine
+  engine.postMessage({ type: 'init' });
 
-    var moveColor = 'White'
-    if (game.turn() === 'b') {
-      moveColor = 'Black'
+  engine.onmessage = function(e) {
+    var data = e.data;
+
+    if (data.type === 'ready') {
+      engineReady = true;
+      document.getElementById('statusDot').className = 'status-dot connected';
+      document.getElementById('status').textContent = 'Your turn — make a move!';
+      initBoard();
     }
-    if (game.in_checkmate()) {
-      status = 'Game over, ' + moveColor + ' is in checkmate.'
-      $modalTitle.html("Game Over")
-      $modalBody.html(status)
-      $('#gameModal').modal({
-        keyboard: false,
-        backdrop: 'static'
-      }); 
+    else if (data.type === 'status') {
+      document.getElementById('status').textContent = data.message;
     }
-    else if (game.in_draw()) {
-      status = 'Game over, drawn position'
-      $modalTitle.html("Game Over")
-      $modalBody.html(status)
-      $('#gameModal').modal({
-        keyboard: false,
-        backdrop: 'static'
-      });
-    }
-    else if (game.in_stalemate()) {
-      status = 'Game over, stalemate'
-      $modalTitle.html("Game Over")
-      $modalBody.html(status)
-      $('#gameModal').modal({
-        keyboard: false,
-        backdrop: 'static'
-      });
-    }
-    else {
-      status = moveColor + ' to move'
-      if (game.in_check()) {
-        status += ', ' + moveColor + ' is in check'
+    else if (data.type === 'move') {
+      // AI made a move
+      var move = game.move(data.move, { sloppy: true });
+      if (!move) {
+        // Try parsing as { from, to }
+        var from = data.move.substring(0, 2);
+        var to = data.move.substring(2, 4);
+        var promo = data.move.length > 4 ? data.move[4] : undefined;
+        move = game.move({ from: from, to: to, promotion: promo || 'q' });
+      }
+      board.position(game.fen());
+      updateStatus();
+
+      // Restore controls
+      document.getElementById('statusDot').className = 'status-dot connected';
+      if (!game.game_over()) {
+        document.getElementById('status').textContent = 'Your turn';
+      }
+      $("#flip").prop('disabled', false);
+      $("#undo").prop('disabled', false);
+
+      // Simple coaching based on eval change (fallback if Stockfish not ready)
+      if (typeof data.eval === 'number' && !sfReady) {
+        var evalForWhite = orientation === 'white' ? -data.eval : data.eval;
+        var delta = evalForWhite - prevEval;
+        prevEval = evalForWhite;
+        updateEvalBar(evalForWhite);
+
+        var coaching = classifyMove(delta);
+        addCoachMessage(coaching.category, coaching.badge, coaching.message);
+        playerScore += coaching.scoreDelta;
+        document.getElementById('coachScore').textContent = 'Score: ' + playerScore;
+
+        // Request LLM coaching using PGN captured before AI moved
+        requestLiveCoaching(coaching.category, sfPendingPGN || game.pgn());
+      }
+
+      // After AI move, evaluate new position for NEXT player move
+      if (sfReady && !game.game_over()) {
+        sfWorker.postMessage('position fen ' + game.fen());
+        sfEvalQueue.push('baseline');
+        sfWorker.postMessage('go depth 12');
       }
     }
+    else if (data.type === 'error') {
+      console.error('Engine error:', data.message);
+      document.getElementById('status').textContent = 'Engine error — try refreshing';
+      document.getElementById('statusDot').className = 'status-dot';
+      document.getElementById('statusDot').style.background = '#e94560';
+    }
+  };
 
-    $status.html(status)
-    $fen.html(game.fen())
-    $pgn.html(game.pgn())
+  function classifyMove(delta) {
+    // delta: eval change from player's perspective (positive = good for player)
+    // This evaluates the player's LAST move based on how the AI's eval changed
+    var absDelta = Math.abs(delta);
+    if (delta > 0.5) {
+      return { category: 'brilliant', badge: '★ Brilliant', message: 'Excellent move! You gained a significant advantage.', scoreDelta: 3 };
+    } else if (delta > 0.1) {
+      return { category: 'good', badge: '✓ Good', message: 'Solid move. You maintained or improved your position.', scoreDelta: 1 };
+    } else if (delta > -0.1) {
+      return { category: 'ok', badge: 'OK', message: 'Reasonable move.', scoreDelta: 0 };
+    } else if (delta > -0.3) {
+      return { category: 'inaccuracy', badge: '?! Inaccuracy', message: 'Slight inaccuracy. There may have been a better option.', scoreDelta: -1 };
+    } else if (delta > -0.8) {
+      return { category: 'mistake', badge: '? Mistake', message: 'This move lost some advantage. Look for tactical opportunities!', scoreDelta: -2 };
+    } else {
+      return { category: 'blunder', badge: '?? Blunder', message: 'A serious mistake! Try to look ahead more carefully.', scoreDelta: -3 };
+    }
   }
 
-  updateStatus()
-
-  function AIchange(selectObject) {
-    level = selectObject.value;
-    console.log("Level changed")
+  // Accurate move classification using Stockfish centipawn loss
+  // cpLoss is in pawns (1.0 = 100 centipawns)
+  // Thresholds account for Stockfish eval noise (~0.3-0.5 pawns at depth 12)
+  function classifyMoveByCPLoss(cpLoss, evalAfter) {
+    if (cpLoss <= -1.0) {
+      // Player IMPROVED position significantly (found a tactic)
+      return { category: 'brilliant', badge: '★ Brilliant', message: 'Outstanding! You found a strong move that significantly improved your position. (Eval: ' + evalAfter.toFixed(1) + ')', scoreDelta: 3 };
+    } else if (cpLoss <= 0.5) {
+      // Near-best move (within 50cp — accounts for eval noise)
+      return { category: 'good', badge: '✓ Good', message: 'Well played — this is close to the best move. (Eval: ' + evalAfter.toFixed(1) + ')', scoreDelta: 1 };
+    } else if (cpLoss <= 1.0) {
+      // Small loss (50-100cp)
+      return { category: 'ok', badge: 'OK', message: 'Reasonable move, though a slightly better option existed. (Eval: ' + evalAfter.toFixed(1) + ')', scoreDelta: 0 };
+    } else if (cpLoss <= 2.0) {
+      // Inaccuracy (100-200cp)
+      return { category: 'inaccuracy', badge: '?! Inaccuracy', message: 'This move lost about ' + Math.round(cpLoss * 100) + ' centipawns. A better move was available. (Eval: ' + evalAfter.toFixed(1) + ')', scoreDelta: -1 };
+    } else if (cpLoss <= 4.0) {
+      // Mistake (200-400cp)
+      return { category: 'mistake', badge: '? Mistake', message: 'Significant error — you lost about ' + Math.round(cpLoss * 100) + ' centipawns. Look for tactical threats! (Eval: ' + evalAfter.toFixed(1) + ')', scoreDelta: -2 };
+    } else {
+      // Blunder (>400cp)
+      return { category: 'blunder', badge: '?? Blunder', message: 'A serious blunder losing ' + Math.round(cpLoss * 100) + ' centipawns! Always check for hanging pieces and threats. (Eval: ' + evalAfter.toFixed(1) + ')', scoreDelta: -3 };
+    }
   }
 
-  socket.onclose = function () {
-    $modalTitle.html("Connection closed")
-    $modalBody.html("Connection closed unexpectedly please wait while we try to reconnect...")
-    $('#gameModal').modal({
-      keyboard: false,
-      backdrop: 'static'
+  // Notable categories that trigger LLM coaching
+  function requestLiveCoaching(category, pgnSnapshot) {
+    pgnSnapshot = pgnSnapshot || game.pgn();
+    if (game.history().length < 2) return;
+
+    fetch('/api/coach/', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': getCookie('csrftoken'),
+      },
+      body: JSON.stringify({
+        pgn: pgnSnapshot,
+        category: category,
+        player_color: orientation
+      })
+    })
+    .then(function(response) { return response.json(); })
+    .then(function(data) {
+      if (data.tip) {
+        addCoachMessage('system', null, '💡 ' + data.tip);
+      }
+    })
+    .catch(function(err) {
+      console.log('Live coaching error:', err);
     });
   }
 
-  socket.onopen = function () {
-    $('#gameModal').modal('hide');
-    $('#gameModal').data('bs.modal',null);
-  }
-
-  socket.onmessage = function (message) {
-    console.log("Got websocket message " + message.data);
-    var data = JSON.parse(message.data);
-    if (data.command=="join") {
-      console.log("joining room as "+data.orientation)
-      var config = {
+  function initBoard() {
+    var config = {
       draggable: true,
       position: 'start',
       onDragStart: onDragStart,
@@ -261,79 +617,257 @@
       onMouseoutSquare: onMouseoutSquare,
       onMouseoverSquare: onMouseoverSquare,
       pieceTheme: '/static/chessboard/{piece}.png',
-      orientation: data.orientation
-      }
-      board = Chessboard('myBoard', config)
-      orientation=data.orientation;
-      board.position(game.fen());
-      updateStatus();
-    }
-    else if(data.command=="new-move") {
-      game.move(
-          data["move"],
-          {sloppy:true}
-        );
-      board.position(game.fen());
-      updateStatus()
-      $("#AI").hide(500);
-      $("#flip").prop('disabled',false);
-      $("#undo").prop('disabled',false);
-    }
-    else{
-      console.log("Illegal message recieved from server");
-    }
+      orientation: orientation
+    };
+    board = Chessboard('myBoard', config);
+    updateStatus();
   }
 
-  $(document).on('click','#resign', function(){
-    $('#resignModal').modal({
-      keyboard: false,
-      backdrop: 'static'
+  function addCoachMessage(category, badge, text) {
+    var container = document.getElementById('coachMessages');
+    var msg = document.createElement('div');
+    msg.className = 'coach-msg ' + category;
+    var html = '';
+    if (badge) {
+      html += '<span class="eval-badge ' + category + '">' + badge + '</span><br>';
+    }
+    html += text;
+    msg.innerHTML = html;
+    container.appendChild(msg);
+    container.scrollTop = container.scrollHeight;
+  }
+
+  function updateEvalBar(evalScore) {
+    // evalScore is from the PLAYER's perspective (positive = player is winning)
+    // Convert to White's perspective for the bar display
+    var evalForWhite = orientation === 'white' ? evalScore : -evalScore;
+    var clamped = Math.max(-10, Math.min(10, evalForWhite));
+    var pct = 50 + (clamped / 10) * 50;
+    document.getElementById('evalFill').style.height = pct + '%';
+    var display = (evalScore >= 0 ? '+' : '') + evalScore.toFixed(1);
+    document.getElementById('evalWhite').textContent = display;
+    document.getElementById('evalBlack').textContent = display;
+  }
+
+  function removeGreySquares() {
+    $('#myBoard .square-55d63').css('background', '')
+  }
+
+  function greySquare(square) {
+    var $square = $('#myBoard .square-' + square)
+    var background = '#575769'
+    if ($square.hasClass('black-3c85d')) background = '#44445a'
+    $square.css('background', background)
+  }
+
+  function onDragStart(source, piece, position, orientation) {
+    if (!engineReady) return false
+    if (game.game_over()) return false
+    return !((orientation === 'white' && piece.search(/^w/) === -1) ||
+             (orientation === 'black' && piece.search(/^b/) === -1));
+  }
+
+  function onDrop(source, target) {
+    var move = game.move({ from: source, to: target, promotion: 'q' })
+    if (move === null) return 'snapback'
+    moveNum++
+    updateStatus()
+
+    // Capture PGN now (before AI responds) for coaching
+    sfPendingPGN = game.pgn();
+
+    // Trigger Stockfish eval of position AFTER player's move
+    if (sfReady) {
+      // Stop any in-progress baseline search to avoid queue confusion
+      sfWorker.postMessage('stop');
+      sfEvalQueue = []; // Clear any pending baseline results
+      sfWorker.postMessage('position fen ' + game.fen());
+      sfEvalQueue.push('postmove');
+      sfWorker.postMessage('go depth 12');
+    }
+
+    // Show thinking state
+    document.getElementById('statusDot').className = 'status-dot thinking';
+    document.getElementById('status').textContent = 'AI is thinking...';
+    $("#flip").prop('disabled', true);
+    $("#undo").prop('disabled', true);
+
+    // Ask engine for response
+    engine.postMessage({
+      type: 'search',
+      fen: game.fen(),
+      level: level
     });
-  })
-  $(document).on('click','#noRes', function(){
-    $('#resignModal').modal('hide');
-    $('#resignModal').data('bs.modal',null);
-  })
-  $(document).on('click','#yesRes', function(){
-    $('#resignModal').modal('hide');
-    $('#resignModal').data('bs.modal',null);
-    $modalTitle.html("Game over")
-    $modalBody.html("You have resigned from the game. You lose!")
-    $('#gameModal').modal({
-      keyboard: false,
-      backdrop: 'static'
+  }
+
+  function onSnapEnd() {
+    board.position(game.fen())
+  }
+
+  function onMouseoverSquare(square, piece) {
+    if (!((orientation === 'white' && game.turn() === 'w') ||
+          (orientation === 'black' && game.turn() === 'b')))
+      return
+    var moves = game.moves({ square: square, verbose: true })
+    if (moves.length === 0) return
+    greySquare(square)
+    for (var i = 0; i < moves.length; i++) greySquare(moves[i].to)
+  }
+
+  function onMouseoutSquare() {
+    removeGreySquares()
+  }
+
+  function updateStatus() {
+    var moveColor = game.turn() === 'b' ? 'Black' : 'White'
+    var statusText = ''
+
+    if (game.in_checkmate()) {
+      statusText = moveColor + ' is in checkmate!'
+      showGameOver('Game Over', statusText)
+    } else if (game.in_draw()) {
+      statusText = 'Game drawn'
+      showGameOver('Game Over', 'Draw by insufficient material or repetition')
+    } else if (game.in_stalemate()) {
+      statusText = 'Stalemate!'
+      showGameOver('Game Over', statusText)
+    } else {
+      statusText = moveColor + ' to move'
+      if (game.in_check()) statusText += ' (check!)'
+    }
+
+    document.getElementById('status').textContent = statusText;
+    document.getElementById('pgn').textContent = game.pgn();
+    document.getElementById('moveCount').textContent = 'Move ' + Math.ceil(game.history().length / 2);
+  }
+
+  function showGameOver(title, body) {
+    document.getElementById('modal-title').textContent = title;
+    document.getElementById('modal-body').textContent = body;
+    // Show analyze button if game has moves
+    if (game.history().length >= 4) {
+      document.getElementById('analyzeBtn').style.display = '';
+    }
+    var modal = new bootstrap.Modal(document.getElementById('gameModal'), {
+      keyboard: false, backdrop: 'static'
     });
+    modal.show();
+  }
+
+  function requestAnalysis() {
+    // Close game over modal
+    var gameModal = bootstrap.Modal.getInstance(document.getElementById('gameModal'));
+    if (gameModal) gameModal.hide();
+
+    // Show analysis modal with spinner
+    var analysisModal = new bootstrap.Modal(document.getElementById('analysisModal'), {
+      keyboard: true, backdrop: true
+    });
+    analysisModal.show();
+
+    // Send PGN to server for analysis
+    fetch('/api/analyze/', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': getCookie('csrftoken'),
+      },
+      body: JSON.stringify({ pgn: game.pgn() })
+    })
+    .then(function(response) { return response.json(); })
+    .then(function(data) {
+      var container = document.getElementById('analysisContent');
+      if (data.error) {
+        container.innerHTML = '<div class="alert alert-danger">' + data.error + '</div>';
+        return;
+      }
+      // Render the raw markdown-like analysis
+      var html = (data.raw || '')
+        .replace(/## (.*)/g, '<h2>$1</h2>')
+        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+        .replace(/\n- (.*)/g, '\n<li>$1</li>')
+        .replace(/\n(\d+)\. (.*)/g, '\n<li>$2</li>')
+        .replace(/\n/g, '<br>');
+      // Wrap consecutive <li> in <ul>
+      html = html.replace(/(<li>.*?<\/li>(<br>)?)+/g, function(match) {
+        return '<ul>' + match.replace(/<br>/g, '') + '</ul>';
+      });
+      container.innerHTML = html;
+    })
+    .catch(function(err) {
+      document.getElementById('analysisContent').innerHTML =
+        '<div class="alert alert-danger">Failed to analyze: ' + err.message + '</div>';
+    });
+  }
+
+  function getCookie(name) {
+    var value = '; ' + document.cookie;
+    var parts = value.split('; ' + name + '=');
+    if (parts.length === 2) return parts.pop().split(';').shift();
+    return '';
+  }
+
+  function AIchange(selectObject) {
+    level = parseInt(selectObject.value);
+  }
+
+  // Resign
+  $(document).on('click', '#resign', function() {
+    new bootstrap.Modal(document.getElementById('resignModal'), {
+      keyboard: false, backdrop: 'static'
+    }).show();
+  })
+  $(document).on('click', '#noRes', function() {
+    bootstrap.Modal.getInstance(document.getElementById('resignModal')).hide();
+  })
+  $(document).on('click', '#yesRes', function() {
+    bootstrap.Modal.getInstance(document.getElementById('resignModal')).hide();
+    addCoachMessage('system', null, 'You resigned. Better luck next time!');
+    showGameOver('Game Over', 'You resigned from the game.');
   })
 
-  $(document).on('click','#flip', function(){
-    $('#flipModal').modal({
-      keyboard: false,
-      backdrop: 'static'
-    });
+  // Flip
+  $(document).on('click', '#flip', function() {
+    new bootstrap.Modal(document.getElementById('flipModal'), {
+      keyboard: false, backdrop: 'static'
+    }).show();
   })
-  $(document).on('click','#noFlip', function(){
-    $('#flipModal').modal('hide');
-    $('#flipModal').data('bs.modal',null);
+  $(document).on('click', '#noFlip', function() {
+    bootstrap.Modal.getInstance(document.getElementById('flipModal')).hide();
   })
-  $(document).on('click','#yesFlip', function(){
+  $(document).on('click', '#yesFlip', function() {
     board.flip()
-    if(orientation==="white")
-      orientation="black";
-    else
-      orientation="white";
-    socket.send(JSON.stringify({"command": "new-move", "pgn": game.pgn(), "level": level}));
-    $("#AI").show(500);
-    $("#flip").prop('disabled',true);
-    $("#undo").prop('disabled',true);
-    $('#flipModal').modal('hide');
-    $('#flipModal').data('bs.modal',null);
+    orientation = (orientation === "white") ? "black" : "white";
+    // Reset Stockfish eval for new perspective
+    sfEvalBefore = null;
+    sfEvalQueue = [];
+    sfWorker.postMessage('stop');
+    // Ask engine for a move (AI plays for the other side)
+    engine.postMessage({ type: 'search', fen: game.fen(), level: level });
+    document.getElementById('statusDot').className = 'status-dot thinking';
+    document.getElementById('status').textContent = 'AI is thinking...';
+    $("#flip").prop('disabled', true);
+    $("#undo").prop('disabled', true);
+    bootstrap.Modal.getInstance(document.getElementById('flipModal')).hide();
   })
 
-  $(document).on('click','#undo', function(){
+  // Undo
+  $(document).on('click', '#undo', function() {
     game.undo();
     game.undo();
     board.position(game.fen());
-    updateStatus()
+    updateStatus();
+    // Re-evaluate position after undo
+    sfEvalBefore = null;
+    sfEvalQueue = [];
+    sfWorker.postMessage('stop');
+    if (sfReady) {
+      sfWorker.postMessage('ucinewgame');
+      sfWorker.postMessage('position fen ' + game.fen());
+      sfEvalQueue.push('baseline');
+      sfWorker.postMessage('go depth 12');
+    }
+    addCoachMessage('system', null, 'Move undone. Try a different approach!');
   })
 
   </script>

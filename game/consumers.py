@@ -3,6 +3,7 @@ from channels.db import database_sync_to_async
 from .models import Game
 from django.contrib.auth.models import User
 from .chessAI import call_AI
+from .coaching import evaluate_move
 
 
 class GameConsumer(AsyncJsonWebsocketConsumer):
@@ -10,9 +11,9 @@ class GameConsumer(AsyncJsonWebsocketConsumer):
         if self.scope["user"].is_anonymous:
             await self.close()
             return
-        self.game_id = self.scope['url_route']['kwargs']['game_id']
-        try: 
-            self.game_id=int(self.game_id)
+        self.game_id = self.scope["url_route"]["kwargs"]["game_id"]
+        try:
+            self.game_id = int(self.game_id)
         except:
             await self.close()
             return
@@ -29,7 +30,9 @@ class GameConsumer(AsyncJsonWebsocketConsumer):
         command = content.get("command", None)
         try:
             if command == "new-move":
-                await self.new_move(content["source"],content["target"],content["fen"],content["pgn"])
+                await self.new_move(
+                    content["source"], content["target"], content["fen"], content["pgn"]
+                )
             elif command == "game-over":
                 await self.game_over(content["result"])
             elif command == "resign":
@@ -47,58 +50,57 @@ class GameConsumer(AsyncJsonWebsocketConsumer):
             str(self.game_id),
             self.channel_name,
         )
-        await self.send_json({
-            "command":"join",
-            "orientation": data[0],
-            "pgn": data[1],
-            "opp_online": data[2]
-        })
+        await self.send_json(
+            {
+                "command": "join",
+                "orientation": data[0],
+                "pgn": data[1],
+                "opp_online": data[2],
+            }
+        )
 
     async def opp_offline(self):
         await self.channel_layer.group_send(
             str(self.game_id),
-            {
-                "type": "offline.opp",
-                'sender_channel_name': self.channel_name
-            }
+            {"type": "offline.opp", "sender_channel_name": self.channel_name},
         )
-    
-    async def offline_opp(self,event):
-        if self.channel_name != event['sender_channel_name']:
-            await self.send_json({
-                "command":"opponent-offline",
-            })
+
+    async def offline_opp(self, event):
+        if self.channel_name != event["sender_channel_name"]:
+            await self.send_json(
+                {
+                    "command": "opponent-offline",
+                }
+            )
             print("sending offline")
 
     async def opp_online(self):
         await self.channel_layer.group_send(
             str(self.game_id),
-            {
-                "type": "online.opp",
-                'sender_channel_name': self.channel_name
-            }
+            {"type": "online.opp", "sender_channel_name": self.channel_name},
         )
-    
-    async def online_opp(self,event):
-        if self.channel_name != event['sender_channel_name']:
-            await self.send_json({
-                "command":"opponent-online",
-            })
+
+    async def online_opp(self, event):
+        if self.channel_name != event["sender_channel_name"]:
+            await self.send_json(
+                {
+                    "command": "opponent-online",
+                }
+            )
 
     async def resign(self):
         await self.channel_layer.group_send(
             str(self.game_id),
-            {
-                "type": "resign.game",
-                'sender_channel_name': self.channel_name
-            }
+            {"type": "resign.game", "sender_channel_name": self.channel_name},
         )
-    
-    async def resign_game(self,event):
-        if self.channel_name != event['sender_channel_name']:
-            await self.send_json({
-                "command":"opponent-resigned",
-            })
+
+    async def resign_game(self, event):
+        if self.channel_name != event["sender_channel_name"]:
+            await self.send_json(
+                {
+                    "command": "opponent-resigned",
+                }
+            )
 
     async def new_move(self, source, target, fen, pgn):
         await self.channel_layer.group_send(
@@ -109,20 +111,22 @@ class GameConsumer(AsyncJsonWebsocketConsumer):
                 "target": target,
                 "fen": fen,
                 "pgn": pgn,
-                'sender_channel_name': self.channel_name
-            }
+                "sender_channel_name": self.channel_name,
+            },
         )
-    
+
     async def move_new(self, event):
-        if self.channel_name != event['sender_channel_name']:
-            await self.send_json({
-                "command":"new-move",
-                "source": event["source"],
-                "target": event["target"],
-                "fen": event["fen"],
-                "pgn": event["pgn"],
-            })
-        await self.update(event["fen"],event["pgn"])
+        if self.channel_name != event["sender_channel_name"]:
+            await self.send_json(
+                {
+                    "command": "new-move",
+                    "source": event["source"],
+                    "target": event["target"],
+                    "fen": event["fen"],
+                    "pgn": event["pgn"],
+                }
+            )
+        await self.update(event["fen"], event["pgn"])
 
     @database_sync_to_async
     def game_over(self, result):
@@ -140,7 +144,7 @@ class GameConsumer(AsyncJsonWebsocketConsumer):
             return False
         user = self.scope["user"]
         side = "white"
-        opp=False
+        opp = False
         if game.opponent == user:
             game.opponent_online = True
             if game.owner_side == "white":
@@ -162,7 +166,7 @@ class GameConsumer(AsyncJsonWebsocketConsumer):
         else:
             return False
         game.save()
-        return [side,game.pgn,opp]
+        return [side, game.pgn, opp]
 
     @database_sync_to_async
     def disconn(self):
@@ -175,7 +179,7 @@ class GameConsumer(AsyncJsonWebsocketConsumer):
             game.owner_online = False
             print("Setting owner offline")
         game.save()
-        
+
     @database_sync_to_async
     def update(self, fen, pgn):
         game = Game.objects.all().filter(id=self.game_id)[0]
@@ -194,16 +198,31 @@ class SingleConsumer(JsonWebsocketConsumer):
             self.close()
             return
         self.accept()
-        self.send_json({"command":"join", "orientation": "white"})
+        self.prev_eval = 0.0
+        self.send_json({"command": "join", "orientation": "white"})
 
     def receive_json(self, content):
         command = content.get("command", None)
         try:
             if command == "new-move":
-                move = call_AI(content["pgn"], int(content["level"]))
-                print(move)
-                self.send_json({"command": "new-move", "move": move})
-            else: 
+                pgn = content["pgn"]
+                level = int(content["level"])
+
+                # Evaluate the player's move (before AI responds)
+                coaching = evaluate_move(pgn, self.prev_eval)
+                self.prev_eval = coaching.get("eval_score", self.prev_eval)
+
+                # Get AI response
+                move = call_AI(pgn, level)
+
+                self.send_json(
+                    {
+                        "command": "new-move",
+                        "move": move,
+                        "coaching": coaching,
+                    }
+                )
+            else:
                 pass
         except Exception as e:
             print(f"Error: {e}")
