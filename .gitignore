@@ -1,0 +1,10 @@
+.env
+*.pyc
+__pycache__/
+db.sqlite3
+*.sqlite3
+data/
+checkpoints/
+game/static/engine/model.onnx
+game/static/engine/model_q8.onnx
+game/static/engine/ort-wasm-simd-threaded.*
