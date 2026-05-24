@@ -6,5 +6,4 @@ db.sqlite3
 data/
 checkpoints/
 game/static/engine/model.onnx
-game/static/engine/model_q8.onnx
 game/static/engine/ort-wasm-simd-threaded.*
