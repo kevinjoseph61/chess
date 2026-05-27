@@ -7,3 +7,4 @@ data/
 checkpoints/
 game/static/engine/model.onnx
 game/static/engine/ort-wasm-simd-threaded.*
+staticfiles/

@@ -193,16 +193,34 @@
 
   /* Move list */
   .move-list {
-    font-family: 'Courier New', monospace;
     font-size: 0.8rem;
-    color: var(--chess-muted);
-    max-height: 60px;
+    max-height: 120px;
     overflow-y: auto;
     overflow-x: hidden;
-    word-wrap: break-word;
-    overflow-wrap: break-word;
     max-width: 420px;
   }
+  .move-list table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  .move-list th {
+    color: var(--chess-muted);
+    font-weight: 600;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    padding: 2px 6px;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+  }
+  .move-list td {
+    padding: 1px 6px;
+    color: var(--chess-text);
+    font-family: 'Courier New', monospace;
+  }
+  .move-list tr:nth-child(even) {
+    background: rgba(255,255,255,0.03);
+  }
+  .move-num { color: var(--chess-muted); width: 30px; }
+  .piece-icon { font-size: 1rem; margin-right: 2px; }
 
   /* Modal styling */
   .modal-content {
@@ -737,8 +755,55 @@
     }
 
     document.getElementById('status').textContent = statusText;
-    document.getElementById('pgn').textContent = game.pgn();
+    updateMoveList();
     document.getElementById('moveCount').textContent = 'Move ' + Math.ceil(game.history().length / 2);
+  }
+
+  var PIECE_ICONS = {
+    'K': '♔', 'Q': '♕', 'R': '♖', 'B': '♗', 'N': '♘', 'P': '♙',
+    'k': '♚', 'q': '♛', 'r': '♜', 'b': '♝', 'n': '♞', 'p': '♟'
+  };
+
+  function formatMove(san, isWhite) {
+    // Map SAN piece letters to icons
+    var pieceMap = isWhite
+      ? { 'K': '♔', 'Q': '♕', 'R': '♖', 'B': '♗', 'N': '♘' }
+      : { 'K': '♚', 'Q': '♛', 'R': '♜', 'B': '♝', 'N': '♞' };
+    var pawnIcon = isWhite ? '♙' : '♟';
+
+    // Castling
+    if (san === 'O-O' || san === 'O-O-O') {
+      return '<span class="piece-icon">' + pieceMap['K'] + '</span>' + san;
+    }
+
+    // Check if move starts with a piece letter
+    var firstChar = san.charAt(0);
+    if (pieceMap[firstChar]) {
+      return '<span class="piece-icon">' + pieceMap[firstChar] + '</span>' + san.slice(1);
+    }
+
+    // Pawn move
+    return '<span class="piece-icon">' + pawnIcon + '</span>' + san;
+  }
+
+  function updateMoveList() {
+    var history = game.history();
+    if (history.length === 0) {
+      document.getElementById('pgn').innerHTML = '<span style="color:var(--chess-muted)">No moves yet</span>';
+      return;
+    }
+    var html = '<table><tr><th>#</th><th>White</th><th>Black</th></tr>';
+    for (var i = 0; i < history.length; i += 2) {
+      var moveNum = Math.floor(i / 2) + 1;
+      var whiteMove = formatMove(history[i], true);
+      var blackMove = (i + 1 < history.length) ? formatMove(history[i + 1], false) : '';
+      html += '<tr><td class="move-num">' + moveNum + '.</td><td>' + whiteMove + '</td><td>' + blackMove + '</td></tr>';
+    }
+    html += '</table>';
+    document.getElementById('pgn').innerHTML = html;
+    // Auto-scroll to bottom
+    var el = document.getElementById('pgn');
+    el.scrollTop = el.scrollHeight;
   }
 
   function showGameOver(title, body) {

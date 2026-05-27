@@ -16,10 +16,10 @@
  */
 
 // Import ONNX Runtime Web
-importScripts('https://cdn.jsdelivr.net/npm/onnxruntime-web@1.21.0/dist/ort.min.js');
+importScripts('https://cdn.jsdelivr.net/npm/onnxruntime-web@1.26.0/dist/ort.min.js');
 
 // Point WASM files to CDN
-ort.env.wasm.wasmPaths = 'https://cdn.jsdelivr.net/npm/onnxruntime-web@1.21.0/dist/';
+ort.env.wasm.wasmPaths = 'https://cdn.jsdelivr.net/npm/onnxruntime-web@1.26.0/dist/';
 
 // ============================================================
 // Board representation (minimal chess logic for encoding)
@@ -330,7 +330,11 @@ async function initModel() {
     // Configure ONNX Runtime for WASM
     ort.env.wasm.numThreads = 1;
     
-    session = await ort.InferenceSession.create('/static/engine/model_q8.onnx', {
+    // Fetch model as ArrayBuffer to avoid protobuf URL fetch issues
+    const response = await fetch('/static/engine/model_q8.onnx');
+    const modelBuffer = await response.arrayBuffer();
+    
+    session = await ort.InferenceSession.create(modelBuffer, {
       executionProviders: ['wasm'],
       graphOptimizationLevel: 'all',
     });
