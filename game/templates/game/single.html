@@ -394,6 +394,7 @@
   var moveNum = 0;
   var playerScore = 0;
   var prevEval = 0;
+  var lastMoveSquares = null;
 
   // ---- Stockfish evaluator for accurate move classification ----
   var sfReady = false;
@@ -512,6 +513,7 @@
         move = game.move({ from: from, to: to, promotion: promo || 'q' });
       }
       board.position(game.fen());
+      if (move) highlightLastMove(move.from, move.to);
       updateStatus();
 
       // Restore controls
@@ -668,7 +670,7 @@
   }
 
   function removeGreySquares() {
-    $('#myBoard .square-55d63').css('background', '')
+    $('#myBoard .square-55d63').not('.highlight-last-move').css('background', '')
   }
 
   function greySquare(square) {
@@ -676,6 +678,19 @@
     var background = '#575769'
     if ($square.hasClass('black-3c85d')) background = '#44445a'
     $square.css('background', background)
+  }
+
+  function highlightLastMove(from, to) {
+    // Remove previous highlights
+    $('#myBoard .square-55d63').removeClass('highlight-last-move').css('background', '');
+    lastMoveSquares = { from: from, to: to };
+    // Apply highlight
+    var squares = [from, to];
+    for (var i = 0; i < squares.length; i++) {
+      var $sq = $('#myBoard .square-' + squares[i]);
+      var bg = $sq.hasClass('black-3c85d') ? 'rgba(155, 199, 0, 0.41)' : 'rgba(255, 255, 0, 0.4)';
+      $sq.css('background', bg).addClass('highlight-last-move');
+    }
   }
 
   function onDragStart(source, piece, position, orientation) {
@@ -690,6 +705,7 @@
     if (move === null) return 'snapback'
     moveNum++
     updateStatus()
+    highlightLastMove(source, target)
 
     // Capture PGN now (before AI responds) for coaching
     sfPendingPGN = game.pgn();
@@ -720,6 +736,7 @@
 
   function onSnapEnd() {
     board.position(game.fen())
+    if (lastMoveSquares) highlightLastMove(lastMoveSquares.from, lastMoveSquares.to);
   }
 
   function onMouseoverSquare(square, piece) {
@@ -921,7 +938,19 @@
     game.undo();
     game.undo();
     board.position(game.fen());
+    // Restore last move highlight after undo
+    var history = game.history({ verbose: true });
+    if (history.length > 0) {
+      var last = history[history.length - 1];
+      highlightLastMove(last.from, last.to);
+    } else {
+      lastMoveSquares = null;
+      $('#myBoard .square-55d63').removeClass('highlight-last-move').css('background', '');
+    }
     updateStatus();
+    // Reset eval
+    prevEval = 0;
+    updateEvalBar(0);
     // Re-evaluate position after undo
     sfEvalBefore = null;
     sfEvalQueue = [];
