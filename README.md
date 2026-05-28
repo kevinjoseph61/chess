@@ -70,6 +70,8 @@ The single player mode with AI coaching works without Redis. Just start the serv
 
 ## Architecture
 
+![Architecture](docs/architecture.png)
+
 See [ARCHITECTURE.md](ARCHITECTURE.md) for the full system diagram and component breakdown.
 
 **Key components:**
