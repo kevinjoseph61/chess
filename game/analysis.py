@@ -177,19 +177,21 @@ def coach_hint(pgn: str, player_color: str = "white") -> dict:
 
 Current game PGN: {pgn}
 
-Suggest the best move for the student. Explain WHY it's good in 2-3 sentences — mention the tactical or strategic idea, relevant pieces, and key squares. Do NOT reveal the move in algebraic notation; describe it in natural language (e.g. "move your knight to attack the undefended bishop").
+Suggest 2-3 candidate moves, ranked from best to good. For each move:
+- Name the piece and the target square (e.g. "Knight to f3", "Push your d-pawn to d4")
+- In one sentence, explain the idea behind it (tactic, pressure, development, etc.)
 
-Reply with ONLY the hint, no headers or formatting."""
+Keep it concise. Use natural language with square names, not algebraic notation like Nf3 or d4. Format as a numbered list."""
 
     try:
         completion = client.chat.completions.create(
             model="llama-3.3-70b-versatile",
             messages=[
-                {"role": "system", "content": "You are a helpful chess coach giving hints. Describe moves in plain language without algebraic notation."},
+                {"role": "system", "content": "You are a concise chess coach. Give specific move suggestions with piece names and target squares. Keep each suggestion to 1-2 sentences."},
                 {"role": "user", "content": prompt}
             ],
-            temperature=0.7,
-            max_tokens=200,
+            temperature=0.5,
+            max_tokens=250,
         )
         return {"hint": completion.choices[0].message.content.strip()}
     except Exception as e:
