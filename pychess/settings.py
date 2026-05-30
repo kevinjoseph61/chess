@@ -14,20 +14,20 @@ from pathlib import Path
 import os
 
 # Load .env file
-_env_path = Path(__file__).resolve().parent.parent / '.env'
+_env_path = Path(__file__).resolve().parent.parent / ".env"
 if _env_path.exists():
     with open(_env_path) as f:
         for line in f:
             line = line.strip()
-            if line and not line.startswith('#') and '=' in line:
-                key, val = line.split('=', 1)
+            if line and not line.startswith("#") and "=" in line:
+                key, val = line.split("=", 1)
                 os.environ.setdefault(key.strip(), val.strip())
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # Groq API key for LLM coaching
-GROQ_API_KEY = os.environ.get('GROQ_API_KEY', '')
+GROQ_API_KEY = os.environ.get("GROQ_API_KEY", "")
 
 
 # Quick-start development settings - unsuitable for production

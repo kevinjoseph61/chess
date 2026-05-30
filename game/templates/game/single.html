@@ -155,11 +155,13 @@
     gap: 8px;
     flex-wrap: wrap;
     align-items: center;
+    justify-content: center;
+    max-width: 420px;
   }
   .game-controls .btn {
     border-radius: 8px;
-    font-size: 0.85rem;
-    padding: 6px 16px;
+    font-size: 0.8rem;
+    padding: 5px 12px;
   }
   .level-select {
     background: var(--chess-accent);
@@ -354,6 +356,7 @@
           <button class="btn btn-outline-danger" id="resign"><i class="bi bi-flag-fill me-1"></i>Resign</button>
           <button class="btn btn-outline-light" id="flip"><i class="bi bi-arrow-repeat me-1"></i>Flip</button>
           <button class="btn btn-outline-info" id="undo"><i class="bi bi-arrow-counterclockwise me-1"></i>Undo</button>
+          <button class="btn btn-outline-warning" id="hint"><i class="bi bi-lightbulb me-1"></i>Hint</button>
           <select class="level-select" id="level" onchange="AIchange(this)">
             <option value="3">Advanced</option>
             <option value="2">Intermediate</option>
@@ -962,6 +965,26 @@
       sfWorker.postMessage('go depth 12');
     }
     addCoachMessage('system', null, 'Move undone. Try a different approach!');
+  })
+
+  $(document).on('click', '#hint', function() {
+    var pgn = game.pgn();
+    if (!pgn) { addCoachMessage('system', null, 'Make a move first!'); return; }
+    if (game.game_over()) return;
+    var $btn = $(this);
+    $btn.prop('disabled', true).html('<i class="bi bi-hourglass-split me-1"></i>Thinking...');
+    fetch('/api/hint/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+      body: JSON.stringify({ pgn: pgn, player_color: orientation })
+    })
+    .then(r => r.json())
+    .then(data => {
+      if (data.hint) addCoachMessage('system', '💡', data.hint);
+      else addCoachMessage('system', null, data.error || 'Could not get hint');
+    })
+    .catch(() => addCoachMessage('system', null, 'Hint request failed'))
+    .finally(() => $btn.prop('disabled', false).html('<i class="bi bi-lightbulb me-1"></i>Hint'));
   })
 
   </script>
