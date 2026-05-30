@@ -205,3 +205,24 @@ def coach_move_api(request):
         return JsonResponse({'error': 'Invalid request'}, status=400)
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
+
+
+@login_required
+@require_POST
+def coach_hint_api(request):
+    try:
+        data = json.loads(request.body)
+        pgn = data.get('pgn', '')
+        player_color = data.get('player_color', 'white')
+        if not pgn:
+            return JsonResponse({'error': 'Missing PGN'}, status=400)
+        if len(pgn) > 10000:
+            return JsonResponse({'error': 'Game too long'}, status=400)
+
+        from .analysis import coach_hint
+        result = coach_hint(pgn, player_color)
+        return JsonResponse(result)
+    except json.JSONDecodeError:
+        return JsonResponse({'error': 'Invalid request'}, status=400)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)

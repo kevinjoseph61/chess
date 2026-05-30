@@ -3,6 +3,7 @@
 A real-time chess platform with an AlphaZero-style AI engine and live LLM coaching — all running in the browser.
 
 ### [**Try it live → chess-gang.onrender.com**](https://chess-gang.onrender.com/)
+### [**Read the full story on Medium →**](https://medium.com/@kevinjoseph61/how-i-added-an-alphazero-style-ai-engine-and-llm-coach-to-my-chess-app-all-running-in-the-browser-6a0477a9c82c)
 
 > **Looking for the original version?** The classic Chess Gang (Django + Redis multiplayer) is available on the [`master` branch](../../tree/master). This branch (`main`) contains the upgraded AI + coaching version.
 
@@ -68,6 +69,8 @@ The single player mode with AI coaching works without Redis. Just start the serv
 ---
 
 ## Architecture
+
+![Architecture](docs/architecture.png)
 
 See [ARCHITECTURE.md](ARCHITECTURE.md) for the full system diagram and component breakdown.
 

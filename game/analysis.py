@@ -165,3 +165,32 @@ Reply with ONLY the coaching tip, no headers or formatting."""
 
     except Exception as e:
         return {"error": str(e)}
+
+
+def coach_hint(pgn: str, player_color: str = "white") -> dict:
+    if not settings.GROQ_API_KEY:
+        return {"error": "Groq API key not configured"}
+
+    client = Groq(api_key=settings.GROQ_API_KEY)
+
+    prompt = f"""You are a chess coach. The student plays {player_color}. It is currently the student's turn.
+
+Current game PGN: {pgn}
+
+Suggest the best move for the student. Explain WHY it's good in 2-3 sentences — mention the tactical or strategic idea, relevant pieces, and key squares. Do NOT reveal the move in algebraic notation; describe it in natural language (e.g. "move your knight to attack the undefended bishop").
+
+Reply with ONLY the hint, no headers or formatting."""
+
+    try:
+        completion = client.chat.completions.create(
+            model="llama-3.3-70b-versatile",
+            messages=[
+                {"role": "system", "content": "You are a helpful chess coach giving hints. Describe moves in plain language without algebraic notation."},
+                {"role": "user", "content": prompt}
+            ],
+            temperature=0.7,
+            max_tokens=200,
+        )
+        return {"hint": completion.choices[0].message.content.strip()}
+    except Exception as e:
+        return {"error": str(e)}

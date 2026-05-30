@@ -15,7 +15,7 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
-from game.views import index, game, single, createGame, register, ongoing, completed, analyze, coach_move_api
+from game.views import index, game, single, createGame, register, ongoing, completed, analyze, coach_move_api, coach_hint_api
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -29,4 +29,5 @@ urlpatterns = [
     path('completed/', completed, name = 'completed'),
     path('api/analyze/', analyze, name='analyze'),
     path('api/coach/', coach_move_api, name='coach_move'),
+    path('api/hint/', coach_hint_api, name='coach_hint'),
 ]

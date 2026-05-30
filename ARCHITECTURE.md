@@ -4,41 +4,7 @@
 
 A real-time chess platform with AI coaching, built on Django/Channels with a browser-side neural network engine.
 
-```
-┌─────────────────────────────────────────────────────────┐
-│                     Browser (Client)                     │
-│                                                         │
-│  ┌──────────┐  ┌──────────────┐  ┌──────────────────┐  │
-│  │ Chess UI │  │ Engine Worker │  │ Stockfish Worker │  │
-│  │ (Chess.js│  │ (MCTS + ONNX │  │ (UCI eval,       │  │
-│  │  Board.js│  │  Runtime Web)│  │  depth 12)       │  │
-│  └────┬─────┘  └──────┬───────┘  └────────┬─────────┘  │
-│       │               │                    │            │
-│       └───────┬───────┘────────────────────┘            │
-│               │                                         │
-│         ┌─────┴──────┐                                  │
-│         │ Coaching UI │ ← LLM tips, move badges, eval  │
-│         └─────┬──────┘                                  │
-└───────────────┼─────────────────────────────────────────┘
-                │ HTTP (POST /api/coach/, /api/analyze/)
-                │ WebSocket (multiplayer only)
-┌───────────────┼─────────────────────────────────────────┐
-│               │          Server (Django/Daphne)          │
-│         ┌─────┴──────┐                                  │
-│         │   Views     │ → coach_move_api, analyze        │
-│         └─────┬──────┘                                  │
-│               │                                         │
-│         ┌─────┴──────┐  ┌───────────┐  ┌────────────┐  │
-│         │ analysis.py │  │ Channels  │  │  Models    │  │
-│         │ (Groq LLM) │  │ WebSocket │  │ (Game, etc)│  │
-│         └─────┬──────┘  └─────┬─────┘  └─────┬──────┘  │
-│               │               │               │         │
-│         ┌─────┴──┐     ┌─────┴─────┐   ┌────┴─────┐   │
-│         │  Groq  │     │   Redis   │   │ SQLite   │   │
-│         │  API   │     │ (pub/sub) │   │ (DB)     │   │
-│         └────────┘     └───────────┘   └──────────┘   │
-└─────────────────────────────────────────────────────────┘
-```
+![Architecture](docs/architecture.png)
 
 ---
 
@@ -48,10 +14,10 @@ A real-time chess platform with AI coaching, built on Django/Channels with a bro
 
 The single-player page runs two Web Workers in parallel:
 
-| Worker | File | Purpose |
-|--------|------|---------|
-| **Engine Worker** | `engine-worker.js` | Neural net AI (MCTS + ONNX model) |
-| **Stockfish Worker** | `stockfish.js` | Position evaluation for move classification |
+| Worker               | File               | Purpose                                     |
+| -------------------- | ------------------ | ------------------------------------------- |
+| **Engine Worker**    | `engine-worker.js` | Neural net AI (MCTS + ONNX model)           |
+| **Stockfish Worker** | `stockfish.js`     | Position evaluation for move classification |
 
 **Chess UI**: Chessboard.js 1.0.0 (rendering) + Chess.js 0.10.2 (move validation/PGN).
 
@@ -63,14 +29,14 @@ Uses WebSocket (via ReconnectingWebSocket) to Django Channels for real-time move
 
 ### 3. Backend — Django + Daphne (ASGI)
 
-| File | Responsibility |
-|------|---------------|
-| `pychess/routing.py` | ASGI routing — HTTP via `get_asgi_application()`, WebSocket via Channels |
-| `pychess/urls.py` | URL routes — lobby, game, single, create, ongoing, completed, API endpoints |
-| `game/views.py` | View logic — game creation, user registration, coaching API |
-| `game/consumers.py` | WebSocket consumers — `GameConsumer` (multiplayer), `SingleConsumer` (legacy) |
-| `game/analysis.py` | LLM integration — `analyze_game()` (post-game), `coach_move()` (per-move) |
-| `game/models.py` | Database models — `Game` (status, PGN, FEN, players, online status) |
+| File                 | Responsibility                                                                |
+| -------------------- | ----------------------------------------------------------------------------- |
+| `pychess/routing.py` | ASGI routing — HTTP via `get_asgi_application()`, WebSocket via Channels      |
+| `pychess/urls.py`    | URL routes — lobby, game, single, create, ongoing, completed, API endpoints   |
+| `game/views.py`      | View logic — game creation, user registration, coaching API                   |
+| `game/consumers.py`  | WebSocket consumers — `GameConsumer` (multiplayer), `SingleConsumer` (legacy) |
+| `game/analysis.py`   | LLM integration — `analyze_game()` (post-game), `coach_move()` (per-move)     |
+| `game/models.py`     | Database models — `Game` (status, PGN, FEN, players, online status)           |
 
 ### 4. AI Training Pipeline (`training/`)
 
@@ -91,6 +57,7 @@ training/
 ### 5. LLM Coaching (Groq API)
 
 Uses **Llama 3.3 70B** via Groq's free tier for:
+
 - **Per-move coaching**: 1-2 sentence tips after each player move (~0.5s response time)
 - **Post-game analysis**: Full game review with critical moments, missed tactics, strategic themes
 
@@ -124,6 +91,7 @@ Uses **Llama 3.3 70B** via Groq's free tier for:
 ## Database Schema
 
 **Game model** (`game/models.py`):
+
 - `owner` / `opponent`: ForeignKey to User
 - `owner_side`: 'white' or 'black'
 - `status`: 1=awaiting, 2=in_progress, 3=completed
@@ -136,14 +104,14 @@ Uses **Llama 3.3 70B** via Groq's free tier for:
 
 ## Technology Stack
 
-| Layer | Technology | Version |
-|-------|-----------|---------|
-| Server | Django + Daphne (ASGI) | 5.2.14 / 4.2.1 |
-| WebSocket | Django Channels + Redis | 4.3.2 |
-| Database | SQLite | 3.x |
-| AI Model | PyTorch → ONNX | 2.4.1 / 1.21.0 |
-| Browser AI | ONNX Runtime Web (WASM) | 1.21.0 |
-| Position Eval | Stockfish.js (v10) | 10.0.2 |
-| LLM | Groq (Llama 3.3 70B) | Free tier |
-| UI | Bootstrap 5.3.8 + Chessboard.js | Dark theme |
-| Chess Logic | Chess.js / python-chess | 0.10.2 / 1.11.2 |
+| Layer         | Technology                      | Version         |
+| ------------- | ------------------------------- | --------------- |
+| Server        | Django + Daphne (ASGI)          | 5.2.14 / 4.2.1  |
+| WebSocket     | Django Channels + Redis         | 4.3.2           |
+| Database      | SQLite                          | 3.x             |
+| AI Model      | PyTorch → ONNX                  | 2.4.1 / 1.21.0  |
+| Browser AI    | ONNX Runtime Web (WASM)         | 1.21.0          |
+| Position Eval | Stockfish.js (v10)              | 10.0.2          |
+| LLM           | Groq (Llama 3.3 70B)            | Free tier       |
+| UI            | Bootstrap 5.3.8 + Chessboard.js | Dark theme      |
+| Chess Logic   | Chess.js / python-chess         | 0.10.2 / 1.11.2 |
